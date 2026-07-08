@@ -6,17 +6,21 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN addgroup --system app && adduser --system --ingroup app app
+RUN addgroup --system app \
+    && adduser --system --ingroup app app
 
 COPY pyproject.toml ./
-RUN pip install --upgrade pip && pip install -e ".[dev]"
-
-COPY app ./app
+COPY alembic.ini ./
 COPY alembic ./alembic
-COPY alembic.ini ./alembic.ini
+COPY app ./app
+
+RUN pip install --upgrade pip \
+    && pip install .
+
+RUN chown -R app:app /app
 
 USER app
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]
