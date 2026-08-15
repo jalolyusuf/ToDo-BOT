@@ -1,8 +1,7 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-
-from app.db.types import GUID
 
 
 class GroupBase(BaseModel):
@@ -22,8 +21,8 @@ class GroupUpdate(BaseModel):
 class GroupResponse(GroupBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: GUID
-    owner_id: GUID
+    id: UUID
+    owner_id: UUID
     created_at: datetime
     updated_at: datetime
 

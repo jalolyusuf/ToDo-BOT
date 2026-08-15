@@ -1,8 +1,8 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.db.types import GUID
 from app.models.task import TaskPriority, TaskStatus
 
 
@@ -14,8 +14,8 @@ class TaskBase(BaseModel):
 
 
 class TaskCreate(TaskBase):
-    assignee_id: GUID | None = None
-    group_id: GUID | None = None  # Optional: personal task or group task
+    assignee_id: UUID | None = None
+    group_id: UUID | None = None  # Optional: personal task or group task
 
 
 class TaskUpdate(BaseModel):
@@ -23,7 +23,7 @@ class TaskUpdate(BaseModel):
     description: str | None = Field(None, max_length=5000)
     priority: TaskPriority | None = None
     deadline: datetime | None = None
-    assignee_id: GUID | None = None
+    assignee_id: UUID | None = None
 
 
 class TaskStatusUpdate(BaseModel):
@@ -31,17 +31,17 @@ class TaskStatusUpdate(BaseModel):
 
 
 class TaskAssignUpdate(BaseModel):
-    assignee_id: GUID | None
+    assignee_id: UUID | None
 
 
 class TaskResponse(TaskBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: GUID
+    id: UUID
     status: TaskStatus
-    creator_id: GUID
-    assignee_id: GUID | None
-    group_id: GUID | None
+    creator_id: UUID
+    assignee_id: UUID | None
+    group_id: UUID | None
     created_at: datetime
     updated_at: datetime
 
@@ -67,7 +67,7 @@ class TaskFilterParams(BaseModel):
 
     status: TaskStatus | None = None
     priority: TaskPriority | None = None
-    assignee_id: GUID | None = None
-    creator_id: GUID | None = None
-    group_id: GUID | None = None
+    assignee_id: UUID | None = None
+    creator_id: UUID | None = None
+    group_id: UUID | None = None
     has_deadline: bool | None = None  # True: has deadline, False: no deadline

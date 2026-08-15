@@ -1,8 +1,8 @@
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from app.db.types import GUID
 from app.models.group_membership import MembershipRole, MembershipStatus
 
 
@@ -14,9 +14,9 @@ class MembershipBase(BaseModel):
 class MembershipResponse(MembershipBase):
     model_config = ConfigDict(from_attributes=True)
 
-    id: GUID
-    group_id: GUID
-    user_id: GUID
+    id: UUID
+    group_id: UUID
+    user_id: UUID
     created_at: datetime
     updated_at: datetime
 
@@ -28,7 +28,7 @@ class MembershipWithUserResponse(MembershipResponse):
 
 
 class AddMemberRequest(BaseModel):
-    user_id: GUID
+    user_id: UUID
     role: MembershipRole = MembershipRole.MEMBER
 
 
