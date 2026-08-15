@@ -131,7 +131,7 @@ async def list_user_tasks(
     # Get user's group memberships
     user_group_ids_stmt = select(GroupMembership.group_id).where(
         GroupMembership.user_id == user.id,
-        GroupMembership.status == MembershipStatus.ACTIVE,
+        GroupMembership.status == MembershipStatus.ACTIVE.value,
     )
     user_group_ids_result = await session.execute(user_group_ids_stmt)
     user_group_ids = [row[0] for row in user_group_ids_result.all()]
@@ -265,7 +265,7 @@ async def _check_user_group_membership(
     stmt = select(GroupMembership).where(
         GroupMembership.group_id == group_id,
         GroupMembership.user_id == user_id,
-        GroupMembership.status == MembershipStatus.ACTIVE,
+        GroupMembership.status == MembershipStatus.ACTIVE.value,
     )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()

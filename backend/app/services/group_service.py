@@ -37,8 +37,8 @@ async def create_group(
     membership = GroupMembership(
         group_id=group.id,
         user_id=owner.id,
-        role=MembershipRole.OWNER,
-        status=MembershipStatus.ACTIVE,
+        role=MembershipRole.OWNER.value,
+        status=MembershipStatus.ACTIVE.value,
     )
     session.add(membership)
 
@@ -72,7 +72,7 @@ async def list_user_groups(
         .join(GroupMembership, GroupMembership.group_id == Group.id)
         .where(
             GroupMembership.user_id == user.id,
-            GroupMembership.status == MembershipStatus.ACTIVE,
+            GroupMembership.status == MembershipStatus.ACTIVE.value,
         )
         .order_by(Group.created_at.desc())
     )
@@ -123,7 +123,7 @@ async def check_user_membership(
     stmt = select(GroupMembership).where(
         GroupMembership.group_id == group_id,
         GroupMembership.user_id == user_id,
-        GroupMembership.status == MembershipStatus.ACTIVE,
+        GroupMembership.status == MembershipStatus.ACTIVE.value,
     )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
@@ -136,7 +136,7 @@ async def check_user_is_owner(
 ) -> bool:
     """Check if user is the owner of the group."""
     membership = await check_user_membership(session, group_id, user_id)
-    return membership is not None and membership.role == MembershipRole.OWNER
+    return membership is not None and membership.role == MembershipRole.OWNER.value
 
 
 async def add_member(
@@ -159,7 +159,7 @@ async def add_member(
         group_id=group_id,
         user_id=user_id,
         role=role,
-        status=MembershipStatus.ACTIVE,
+        status=MembershipStatus.ACTIVE.value,
     )
     session.add(membership)
     await session.commit()
@@ -182,7 +182,7 @@ async def remove_member(
     if membership is None:
         raise ValueError("User is not a member of this group")
 
-    if membership.role == MembershipRole.OWNER:
+    if membership.role == MembershipRole.OWNER.value:
         raise ValueError("Cannot remove group owner")
 
     await session.delete(membership)
@@ -203,7 +203,7 @@ async def list_group_members(
         .join(User, GroupMembership.user_id == User.id)
         .where(
             GroupMembership.group_id == group_id,
-            GroupMembership.status == MembershipStatus.ACTIVE,
+            GroupMembership.status == MembershipStatus.ACTIVE.value,
         )
         .order_by(
             GroupMembership.role.desc(),  # Owner first
