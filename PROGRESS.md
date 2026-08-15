@@ -1,6 +1,6 @@
 # ToDo-BOT — Development Progress & Roadmap
 
-**Oxirgi yangilangan:** 2026-08-14
+**Oxirgi yangilangan:** 2026-08-15
 
 **Maqsad:** Telegram Mini App asosida Task Management platformasi yaratish
 
@@ -26,11 +26,11 @@
 ### Phase 2: Identity & Telegram Integration 🚧
 **Holat:** IN PROGRESS (85% tugallangan)
 
-### Phase 3: Groups 📋
-**Holat:** PLANNED
+### Phase 3: Groups ✅
+**Holat:** COMPLETED (Backend & Database - 2026-08-15)
 
-### Phase 4: Tasks 📋
-**Holat:** PLANNED
+### Phase 4: Tasks ✅
+**Holat:** COMPLETED (Backend & Database - 2026-08-15)
 
 ### Phase 5+: Comments, Storage, Payment, Reminders, Blacklist 📋
 **Holat:** PLANNED
@@ -103,6 +103,26 @@
   - ✅ is_active flag
   - ✅ can_create_groups flag
   - ✅ Timestamps (created_at, updated_at)
+
+- ✅ **0002_create_groups** migration (2026-08-15)
+  - ✅ Groups table with name, description, owner_id
+  - ✅ Foreign key to users (ondelete CASCADE)
+  - ✅ Indexes on owner_id
+
+- ✅ **0003_create_group_memberships** migration (2026-08-15)
+  - ✅ Group memberships table
+  - ✅ MembershipRole enum (owner, member) - auto-created by SQLAlchemy
+  - ✅ MembershipStatus enum (active, inactive) - auto-created by SQLAlchemy
+  - ✅ Unique constraint on (group_id, user_id)
+  - ✅ Indexes on group_id and user_id
+
+- ✅ **0004_create_tasks** migration (2026-08-15)
+  - ✅ Tasks table with full schema
+  - ✅ TaskStatus enum (created, assigned, in_progress, on_hold, review, completed, cancelled)
+  - ✅ TaskPriority enum (low, normal, high, urgent)
+  - ✅ Optional group_id (personal tasks support)
+  - ✅ Foreign keys with proper CASCADE/SET NULL behavior
+  - ✅ Indexes on creator_id, assignee_id, group_id, status, deadline, priority
 
 ---
 
@@ -296,7 +316,7 @@
   - 📋 Loading states
   - 📋 Error handling
 - 📋 Telegram WebApp theme integration
-- 📋 Production telegram webhook configuration
+- ✅ Production telegram webhook configuration (2026-08-15)
 - 📋 Webhook secret validation implementation
 - 📋 Test coverage expansion
   - 📋 Integration tests
@@ -304,26 +324,26 @@
 
 ---
 
-# 📋 PHASE 3 — GROUPS
+# ✅ PHASE 3 — GROUPS (Backend COMPLETED 2026-08-15)
 
 **BUSINESS QOIDA:** Payment tizimi yo'q. Group yaratish huquqi `can_create_groups` flag orqali boshqariladi. Admin user'ga bir marta ruxsat beradi, keyin cheksiz group ochish mumkin.
 
 ## Database Models
-- 📋 **Group** model & migration
-  - 📋 id (UUID)
-  - 📋 name (String)
-  - 📋 description (Text, optional)
-  - 📋 owner_id (FK to User)
-  - 📋 created_at, updated_at
+- ✅ **Group** model & migration
+  - ✅ id (UUID)
+  - ✅ name (String)
+  - ✅ description (Text, optional)
+  - ✅ owner_id (FK to User)
+  - ✅ created_at, updated_at
   
-- 📋 **GroupMembership** model & migration
-  - 📋 id (UUID)
-  - 📋 group_id (FK to Group)
-  - 📋 user_id (FK to User)
-  - 📋 role (Enum: owner, member)
-  - 📋 status (Enum: active, inactive)
-  - 📋 UNIQUE(group_id, user_id)
-  - 📋 created_at, updated_at
+- ✅ **GroupMembership** model & migration
+  - ✅ id (UUID)
+  - ✅ group_id (FK to Group)
+  - ✅ user_id (FK to User)
+  - ✅ role (Enum: owner, member)
+  - ✅ status (Enum: active, inactive)
+  - ✅ UNIQUE(group_id, user_id)
+  - ✅ created_at, updated_at
 
 - 📋 **Invite** model & migration (optional, keyinroq)
   - 📋 id (UUID)
@@ -337,40 +357,40 @@
   - 📋 created_at
 
 ## Business Logic
-- 📋 Group service
-  - 📋 create_group (check can_create_groups permission)
-  - 📋 get_group (with membership check)
-  - 📋 update_group (owner only)
-  - 📋 delete_group (owner only)
+- ✅ Group service
+  - ✅ create_group (check can_create_groups permission)
+  - ✅ get_group (with membership check)
+  - ✅ update_group (owner only)
+  - ✅ delete_group (owner only)
   
-- 📋 Membership service
-  - 📋 add_member
-  - 📋 remove_member
-  - 📋 check_membership
-  - 📋 get_group_members
+- ✅ Membership service
+  - ✅ add_member
+  - ✅ remove_member
+  - ✅ check_membership
+  - ✅ get_group_members
 
-- 📋 Invite service
+- 📋 Invite service (optional, future)
   - 📋 create_invite
   - 📋 use_invite
   - 📋 revoke_invite
 
 ## API Endpoints
-- 📋 **GET** /api/v1/groups
-- 📋 **POST** /api/v1/groups (with payment)
-- 📋 **GET** /api/v1/groups/{group_id}
-- 📋 **PATCH** /api/v1/groups/{group_id}
-- 📋 **DELETE** /api/v1/groups/{group_id}
-- 📋 **GET** /api/v1/groups/{group_id}/members
-- 📋 **POST** /api/v1/groups/{group_id}/members
-- 📋 **DELETE** /api/v1/groups/{group_id}/members/{user_id}
-- 📋 **GET** /api/v1/groups/{group_id}/invites
-- 📋 **POST** /api/v1/groups/{group_id}/invites
-- 📋 **POST** /api/v1/invites/{token}/use
+- ✅ **GET** /api/v1/groups
+- ✅ **POST** /api/v1/groups (no payment, permission-based)
+- ✅ **GET** /api/v1/groups/{group_id}
+- ✅ **PATCH** /api/v1/groups/{group_id}
+- ✅ **DELETE** /api/v1/groups/{group_id}
+- ✅ **GET** /api/v1/groups/{group_id}/members
+- ✅ **POST** /api/v1/groups/{group_id}/members
+- ✅ **DELETE** /api/v1/groups/{group_id}/members/{user_id}
+- 📋 **GET** /api/v1/groups/{group_id}/invites (future)
+- 📋 **POST** /api/v1/groups/{group_id}/invites (future)
+- 📋 **POST** /api/v1/invites/{token}/use (future)
 
 ## Authorization
-- 📋 Group Owner permission check
-- 📋 Group Member permission check
-- 📋 Non-member access denial
+- ✅ Group Owner permission check
+- ✅ Group Member permission check
+- ✅ Non-member access denial
 
 ## Frontend
 - 📋 Groups list page
@@ -389,48 +409,48 @@
 
 ---
 
-# 📋 PHASE 4 — TASKS
+# ✅ PHASE 4 — TASKS (Backend COMPLETED 2026-08-15)
 
 ## Database Models
-- 📋 **Task** model & migration
-  - 📋 id (UUID)
-  - 📋 group_id (FK to Group, optional/required per business rule)
-  - 📋 creator_id (FK to User)
-  - 📋 assignee_id (FK to User)
-  - 📋 title (String, required)
-  - 📋 description (Text, optional)
-  - 📋 status (Enum: created, assigned, in_progress, completed)
-  - 📋 priority (Enum: TBD per business decision)
-  - 📋 deadline (DateTime, timezone-aware, optional)
-  - 📋 created_at, updated_at
-  - 📋 Indexes: creator_id, assignee_id, group_id, status, deadline
+- ✅ **Task** model & migration
+  - ✅ id (UUID)
+  - ✅ group_id (FK to Group, optional for personal tasks)
+  - ✅ creator_id (FK to User)
+  - ✅ assignee_id (FK to User, optional)
+  - ✅ title (String, required)
+  - ✅ description (Text, optional)
+  - ✅ status (Enum: created, assigned, in_progress, on_hold, review, completed, cancelled)
+  - ✅ priority (Enum: low, normal, high, urgent)
+  - ✅ deadline (DateTime, timezone-aware, optional)
+  - ✅ created_at, updated_at
+  - ✅ Indexes: creator_id, assignee_id, group_id, status, deadline, priority
 
 ## Business Logic
-- 📋 Task service
-  - 📋 create_task (with authorization)
-  - 📋 get_task (with visibility check)
-  - 📋 update_task (with authorization)
-  - 📋 delete_task (Creator ONLY, NOT Master Admin)
-  - 📋 change_status (with state machine validation)
-  - 📋 assign_task
-  - 📋 list_tasks (with permission filter)
+- ✅ Task service
+  - ✅ create_task (with authorization)
+  - ✅ get_task (with visibility check)
+  - ✅ update_task (with authorization)
+  - ✅ delete_task (Creator ONLY, NOT Master Admin)
+  - ✅ change_status (with validation)
+  - ✅ assign_task
+  - ✅ list_tasks (with permission filter)
 
 ## API Endpoints
-- 📋 **GET** /api/v1/tasks (with filters)
-- 📋 **POST** /api/v1/tasks
-- 📋 **GET** /api/v1/tasks/{task_id}
-- 📋 **PATCH** /api/v1/tasks/{task_id}
-- 📋 **DELETE** /api/v1/tasks/{task_id} (Creator only)
-- 📋 **PATCH** /api/v1/tasks/{task_id}/status
-- 📋 **PATCH** /api/v1/tasks/{task_id}/assign
+- ✅ **GET** /api/v1/tasks (with filters)
+- ✅ **POST** /api/v1/tasks
+- ✅ **GET** /api/v1/tasks/{task_id}
+- ✅ **PATCH** /api/v1/tasks/{task_id}
+- ✅ **DELETE** /api/v1/tasks/{task_id} (Creator only)
+- ✅ **PATCH** /api/v1/tasks/{task_id}/status
+- ✅ **PATCH** /api/v1/tasks/{task_id}/assign
 
 ## Task Filters
-- 📋 Filter by status
-- 📋 Filter by assignee
-- 📋 Filter by creator
-- 📋 Filter by group
-- 📋 Filter by deadline
-- 📋 Filter by priority
+- ✅ Filter by status
+- ✅ Filter by assignee
+- ✅ Filter by creator
+- ✅ Filter by group
+- ✅ Filter by deadline (has_deadline boolean)
+- ✅ Filter by priority
 
 ## Authorization Matrix
 | Action | Creator | Assignee | Group Owner | Master Admin |
@@ -772,9 +792,9 @@ Quyidagi masalalar business owner yoki technical lead tomonidan hal qilinishi ke
 |----|--------|-------|----------|
 |  1 | ~~Payment provider~~ | ✅ CANCELLED | N/A |
 |  2 | ~~Payment currency/price~~ | ✅ CANCELLED | N/A |
-|  3 | Task status enum | ❌ TBD | Medium |
-|  4 | Task priority enum | ❌ TBD | Medium |
-|  5 | Group membership roles | ❌ TBD | Medium |
+|  3 | Task status enum | ✅ DECIDED | Medium |
+|  4 | Task priority enum | ✅ DECIDED | Medium |
+|  5 | Group membership roles | ✅ DECIDED | Medium |
 |  6 | Invite expiry/usage policy | ❌ TBD | Medium |
 |  7 | Comment edit/delete policy | ❌ TBD | Low |
 |  8 | Attachment size limits | ❌ TBD | Medium |
@@ -855,5 +875,5 @@ Quyidagi masalalar business owner yoki technical lead tomonidan hal qilinishi ke
 
 ---
 
-**Oxirgi yangilangan:** 2026-08-14
+**Oxirgi yangilangan:** 2026-08-15
 **Keyingi yangilanish:** Phase 2 tugagandan keyin
