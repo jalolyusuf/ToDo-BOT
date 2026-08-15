@@ -8,35 +8,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, isLoading, error, setUser, setError, setLoading } = useAuthStore();
 
   useEffect(() => {
-    telegramReady();
-    telegramExpand();
+    // Wait for Telegram WebApp SDK to load
+    const checkTelegramSDK = () => {
+      const telegram = (window as any).Telegram?.WebApp;
 
-    const initData = getRawInitData();
+      if (!telegram) {
+        console.log('[Auth] Telegram SDK not ready, waiting...');
+        return false;
+      }
 
-    // For development/testing in browser
-    if (!initData) {
-      const isDev = import.meta.env.DEV;
-      const isLocalhost = window.location.hostname === 'localhost';
+      console.log('[Auth] Telegram SDK loaded:', {
+        platform: telegram.platform,
+        version: telegram.version,
+        initData: telegram.initData ? 'present' : 'missing',
+        initDataLength: telegram.initData?.length || 0
+      });
 
-      if (isDev || isLocalhost) {
-        // Show warning but allow access for development
-        setError('⚠️ Development Mode: Telegram WebApp not detected. This only works in Telegram Mini App.');
+      return true;
+    };
+
+    // Try multiple times with delays
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const attemptAuth = () => {
+      attempts++;
+      console.log(`[Auth] Attempt ${attempts}/${maxAttempts}`);
+
+      if (!checkTelegramSDK()) {
+        if (attempts < maxAttempts) {
+          setTimeout(attemptAuth, 300);
+          return;
+        }
+        // SDK not loaded after all attempts
+        setError('❌ This app must be opened from Telegram bot.\n\n1. Open Telegram\n2. Go to @td_ls_bot\n3. Send /start\n4. Click "Open Mini App"');
         return;
       }
 
-      setError('❌ This app must be opened from Telegram bot.\n\n1. Open Telegram\n2. Go to @td_ls_bot\n3. Send /start\n4. Click "Open Mini App"');
-      return;
-    }
+      // SDK is ready
+      telegramReady();
+      telegramExpand();
 
-    const authHeader = `tma ${initData}`;
+      const initData = getRawInitData();
+      console.log('[Auth] initData:', initData ? `${initData.substring(0, 50)}...` : 'null');
 
-    getAuthMe(authHeader)
-      .then((userData) => {
-        setUser(userData, authHeader);
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Authentication failed');
-      });
+      if (!initData) {
+        console.error('[Auth] No initData after SDK loaded!');
+        setError('❌ This app must be opened from Telegram bot.\n\n1. Open Telegram\n2. Go to @td_ls_bot\n3. Send /start\n4. Click "Open Mini App"');
+        return;
+      }
+
+      const authHeader = `tma ${initData}`;
+
+      getAuthMe(authHeader)
+        .then((userData) => {
+          console.log('[Auth] Success:', userData.first_name);
+          setUser(userData, authHeader);
+        })
+        .catch((err) => {
+          console.error('[Auth] Failed:', err);
+          setError(err instanceof Error ? err.message : 'Authentication failed');
+        });
+    };
+
+    attemptAuth();
   }, [setUser, setError, setLoading]);
 
   if (isLoading) {
