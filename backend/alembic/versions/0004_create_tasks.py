@@ -17,16 +17,13 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum types
+    # Create enum types (separate commands for asyncpg)
     op.execute(
-        """
-        CREATE TYPE taskstatus AS ENUM (
-            'created', 'assigned', 'in_progress', 'on_hold',
-            'review', 'completed', 'cancelled'
-        );
-        CREATE TYPE taskpriority AS ENUM ('low', 'normal', 'high', 'urgent');
-        """
+        "CREATE TYPE taskstatus AS ENUM ("
+        "'created', 'assigned', 'in_progress', 'on_hold', "
+        "'review', 'completed', 'cancelled')"
     )
+    op.execute("CREATE TYPE taskpriority AS ENUM ('low', 'normal', 'high', 'urgent')")
 
     op.create_table(
         "tasks",
@@ -107,5 +104,5 @@ def downgrade() -> None:
     op.drop_index("ix_tasks_assignee_id", table_name="tasks")
     op.drop_index("ix_tasks_creator_id", table_name="tasks")
     op.drop_table("tasks")
-    op.execute("DROP TYPE taskpriority;")
-    op.execute("DROP TYPE taskstatus;")
+    op.execute("DROP TYPE taskpriority")
+    op.execute("DROP TYPE taskstatus")
