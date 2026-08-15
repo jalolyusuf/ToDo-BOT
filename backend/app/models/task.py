@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import ModelBase
@@ -31,8 +31,16 @@ class Task(ModelBase):
     # Basic fields
     title: Mapped[str] = mapped_column(String(256), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[TaskStatus] = mapped_column(nullable=False, default=TaskStatus.CREATED)
-    priority: Mapped[TaskPriority] = mapped_column(nullable=False, default=TaskPriority.NORMAL)
+    status: Mapped[TaskStatus] = mapped_column(
+        SQLEnum(TaskStatus, native_enum=True, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=TaskStatus.CREATED
+    )
+    priority: Mapped[TaskPriority] = mapped_column(
+        SQLEnum(TaskPriority, native_enum=True, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=TaskPriority.NORMAL
+    )
     deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships

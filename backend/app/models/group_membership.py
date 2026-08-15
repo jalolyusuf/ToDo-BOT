@@ -1,6 +1,6 @@
 from enum import Enum
 
-from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlalchemy import Enum as SQLEnum, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import ModelBase
@@ -31,9 +31,15 @@ class GroupMembership(ModelBase):
         nullable=False,
         index=True,
     )
-    role: Mapped[MembershipRole] = mapped_column(nullable=False, default=MembershipRole.MEMBER)
+    role: Mapped[MembershipRole] = mapped_column(
+        SQLEnum(MembershipRole, native_enum=True, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=MembershipRole.MEMBER
+    )
     status: Mapped[MembershipStatus] = mapped_column(
-        nullable=False, default=MembershipStatus.ACTIVE
+        SQLEnum(MembershipStatus, native_enum=True, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=MembershipStatus.ACTIVE
     )
 
     # Relationships
