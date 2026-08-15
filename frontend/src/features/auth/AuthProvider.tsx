@@ -12,8 +12,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     telegramExpand();
 
     const initData = getRawInitData();
+
+    // For development/testing in browser
     if (!initData) {
-      setError('Telegram WebApp data not found');
+      const isDev = import.meta.env.DEV;
+      const isLocalhost = window.location.hostname === 'localhost';
+
+      if (isDev || isLocalhost) {
+        // Show warning but allow access for development
+        setError('⚠️ Development Mode: Telegram WebApp not detected. This only works in Telegram Mini App.');
+        return;
+      }
+
+      setError('❌ This app must be opened from Telegram bot.\n\n1. Open Telegram\n2. Go to @td_ls_bot\n3. Send /start\n4. Click "Open Mini App"');
       return;
     }
 
