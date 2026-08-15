@@ -17,10 +17,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum types (separate commands for asyncpg)
-    op.execute("CREATE TYPE membershiprole AS ENUM ('owner', 'member')")
-    op.execute("CREATE TYPE membershipstatus AS ENUM ('active', 'inactive')")
-
+    # Enum types are automatically created by SQLAlchemy from sa.Enum() in columns
     op.create_table(
         "group_memberships",
         sa.Column("id", GUID(), primary_key=True, nullable=False),
@@ -72,5 +69,4 @@ def downgrade() -> None:
     op.drop_index("ix_group_memberships_user_id", table_name="group_memberships")
     op.drop_index("ix_group_memberships_group_id", table_name="group_memberships")
     op.drop_table("group_memberships")
-    op.execute("DROP TYPE membershipstatus")
-    op.execute("DROP TYPE membershiprole")
+    # Enum types are automatically dropped by SQLAlchemy

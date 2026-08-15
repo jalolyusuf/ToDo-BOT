@@ -17,14 +17,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum types (separate commands for asyncpg)
-    op.execute(
-        "CREATE TYPE taskstatus AS ENUM ("
-        "'created', 'assigned', 'in_progress', 'on_hold', "
-        "'review', 'completed', 'cancelled')"
-    )
-    op.execute("CREATE TYPE taskpriority AS ENUM ('low', 'normal', 'high', 'urgent')")
-
+    # Enum types are automatically created by SQLAlchemy from sa.Enum() in columns
     op.create_table(
         "tasks",
         sa.Column("id", GUID(), primary_key=True, nullable=False),
@@ -104,5 +97,4 @@ def downgrade() -> None:
     op.drop_index("ix_tasks_assignee_id", table_name="tasks")
     op.drop_index("ix_tasks_creator_id", table_name="tasks")
     op.drop_table("tasks")
-    op.execute("DROP TYPE taskpriority")
-    op.execute("DROP TYPE taskstatus")
+    # Enum types are automatically dropped by SQLAlchemy
