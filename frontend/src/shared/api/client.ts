@@ -171,6 +171,7 @@ export type TaskWithDetailsResponse = TaskResponse & {
   assignee_first_name: string | null;
   assignee_last_name: string | null;
   assignee_username: string | null;
+  group_name: string | null;
 };
 
 export type TaskListResponse = {

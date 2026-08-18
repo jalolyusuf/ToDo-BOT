@@ -4,6 +4,7 @@ interface BadgeProps {
   children: React.ReactNode;
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
   size?: 'sm' | 'md';
+  className?: string;
 }
 
 const variantClasses = {
@@ -19,13 +20,14 @@ const sizeClasses = {
   md: 'px-2.5 py-1 text-sm',
 };
 
-export function Badge({ children, variant = 'default', size = 'sm' }: BadgeProps) {
+export function Badge({ children, variant = 'default', size = 'sm', className }: BadgeProps) {
   return (
     <span
       className={clsx(
         'inline-flex items-center rounded font-medium',
         variantClasses[variant],
-        sizeClasses[size]
+        sizeClasses[size],
+        className
       )}
     >
       {children}

@@ -81,9 +81,7 @@ export function ProfilePage() {
                   Can Create Groups
                 </Badge>
               )}
-              {user.is_active && (
-                <Badge variant="success">Active</Badge>
-              )}
+              <Badge variant="success">Active</Badge>
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
@@ -159,9 +157,7 @@ export function ProfilePage() {
           <div className="flex justify-between py-2 border-b border-slate-800">
             <dt className="text-slate-400">Status</dt>
             <dd>
-              <Badge variant={user.is_active ? 'success' : 'danger'}>
-                {user.is_active ? 'Active' : 'Inactive'}
-              </Badge>
+              <Badge variant="success">Active</Badge>
             </dd>
           </div>
           <div className="flex justify-between py-2">
