@@ -10,21 +10,22 @@ import {
   Bars3Icon
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../shared/store/auth';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
 interface NavItem {
   to: string;
-  label: string;
+  labelKey: string;
   icon: typeof HomeIcon;
 }
 
 const navItems: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: HomeIcon },
-  { to: '/tasks', label: 'Tasks', icon: CheckCircleIcon },
-  { to: '/kanban', label: 'Kanban', icon: ViewColumnsIcon },
-  { to: '/groups', label: 'Groups', icon: UserGroupIcon },
-  { to: '/analytics', label: 'Analytics', icon: ChartBarIcon },
-  { to: '/settings', label: 'Settings', icon: Cog6ToothIcon },
+  { to: '/', labelKey: 'nav.dashboard', icon: HomeIcon },
+  { to: '/tasks', labelKey: 'nav.tasks', icon: CheckCircleIcon },
+  { to: '/kanban', labelKey: 'nav.kanban', icon: ViewColumnsIcon },
+  { to: '/groups', labelKey: 'nav.groups', icon: UserGroupIcon },
+  { to: '/analytics', labelKey: 'nav.analytics', icon: ChartBarIcon },
+  { to: '/settings', labelKey: 'nav.settings', icon: Cog6ToothIcon },
 ];
 
 interface SidebarProps {
@@ -35,6 +36,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
   const user = useAuthStore((state) => state.user);
+  const { t } = useTranslation();
 
   return (
     <>
@@ -110,7 +112,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     )}
                   >
                     <Icon className="h-5 w-5" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 </li>
               );
