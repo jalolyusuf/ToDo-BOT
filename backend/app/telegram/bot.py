@@ -1,7 +1,6 @@
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 
 from app.core.config import get_settings
 from app.db.session import async_session_factory
@@ -43,12 +42,7 @@ async def handle_start(message: types.Message) -> None:
     async with async_session_factory() as session:
         await get_or_create_or_update_from_telegram_user(session, telegram_user)
 
-    app_url = settings.telegram_mini_app_url or "https://t.me"
-    button = ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="Open Mini App", web_app=WebAppInfo(url=app_url))]]
-    )
-
     await message.answer(
-        "Welcome to Telegram Task Platform. Open the Mini App to continue.",
-        reply_markup=button,
+        "✅ Welcome to Task Platform!\n\n"
+        "Use the menu button below to open the app.",
     )

@@ -68,7 +68,7 @@ async def test_start_invokes_user_registration_or_update(
 
 
 @pytest.mark.asyncio
-async def test_start_response_contains_web_app_button_with_configured_url(
+async def test_start_response_sends_welcome_message(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     settings = Settings()
@@ -92,11 +92,8 @@ async def test_start_response_contains_web_app_button_with_configured_url(
     await bot_module.handle_start(cast(types.Message, message))
 
     assert message.answer_text is not None
-    assert message.answer_kwargs is not None
-    reply_markup = message.answer_kwargs["reply_markup"]
-    button = reply_markup.keyboard[0][0]
-    assert button.web_app is not None
-    assert str(button.web_app.url) == settings.telegram_mini_app_url
+    assert "Welcome" in message.answer_text
+    assert "Task Platform" in message.answer_text
 
 
 def test_create_dispatcher_registers_start_handler() -> None:
