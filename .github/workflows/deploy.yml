@@ -9,58 +9,46 @@ on:
 jobs:
   deploy:
     name: Deploy to Server
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔐 Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-
       - name: 🚀 Deploy to Server
         env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-          PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
-          ssh -i ~/.ssh/id_rsa $SSH_USERNAME@$SSH_HOST << 'ENDSSH'
-            set -e
+          set -e
 
-            echo "📁 Navigating to project..."
-            cd $PROJECT_PATH || exit 1
+          echo "📁 Navigating to project..."
+          cd $HOME/Downloads/ToDo-BOT || exit 1
 
-            echo "📥 Pulling latest code..."
-            git pull origin main
+          echo "📥 Pulling latest code..."
+          git pull origin main
 
-            echo "🔧 Updating bot token..."
-            sed -i "s|TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN|" .env
+          echo "🔧 Updating bot token..."
+          sed -i "s|TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN|" .env
 
-            echo "🐳 Rebuilding containers..."
-            docker compose down
-            docker compose up -d --build
+          echo "🐳 Rebuilding containers..."
+          docker compose down
+          docker compose up -d --build
 
-            echo "⏳ Waiting for containers..."
-            sleep 15
+          echo "⏳ Waiting for containers..."
+          sleep 15
 
-            echo "🗃️  Running migrations..."
-            docker compose exec -T backend alembic upgrade head
+          echo "🗃️  Running migrations..."
+          docker compose exec -T backend alembic upgrade head
 
-            echo "🏥 Health check..."
-            curl -f https://jalolyusuf.info/api/v1/health || exit 1
+          echo "🏥 Health check..."
+          curl -f http://localhost:8000/api/v1/health || curl -f https://jalolyusuf.info/api/v1/health || exit 1
 
-            echo "🤖 Setting webhook..."
-            curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
-              -H "Content-Type: application/json" \
-              -d '{"url":"https://jalolyusuf.info/api/v1/telegram/webhook"}'
+          echo "🤖 Setting webhook..."
+          curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
+            -H "Content-Type: application/json" \
+            -d '{"url":"https://jalolyusuf.info/api/v1/telegram/webhook"}'
 
-            echo "✅ Deployment completed!"
-          ENDSSH
+          echo "✅ Deployment completed!"
 
       - name: 📊 Deployment Summary
         if: success()
