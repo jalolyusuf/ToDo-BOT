@@ -35,7 +35,8 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "welcome": "Welcome",
+    "welcome": "Welcome back",
+    "subtitle": "Here's what's happening with your tasks today",
     "total_tasks": "Total Tasks",
     "in_progress": "In Progress",
     "completed": "Completed",

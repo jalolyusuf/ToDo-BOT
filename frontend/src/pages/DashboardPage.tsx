@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { Card, Badge, Loading, EmptyState } from '../shared/components';
 import { getTasks, getGroups, type TaskStatus, type TaskPriority } from '../shared/api/client';
 import { useAuthStore } from '../shared/store/auth';
+import { useTranslation } from 'react-i18next';
 import {
   CheckCircleIcon,
   ClockIcon,
@@ -39,6 +40,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const authHeader = useAuthStore((state) => state.authHeader);
   const user = useAuthStore((state) => state.user);
   const [stats, setStats] = useState<TaskStats | null>(null);
@@ -87,11 +89,11 @@ export function DashboardPage() {
   }, [authHeader]);
 
   if (isLoading) {
-    return <Loading message="Loading dashboard..." />;
+    return <Loading message={t('common.loading')} />;
   }
 
   if (!stats) {
-    return <EmptyState title="Failed to load dashboard" description="Please try again later" />;
+    return <EmptyState title={t('errors.load_failed')} description={t('errors.generic')} />;
   }
 
   const statusData = Object.entries(stats.byStatus).map(([name, value]) => ({
@@ -108,9 +110,9 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* Welcome Section */}
       <div>
-        <h1 className="text-3xl font-bold">Welcome back, {user?.first_name}! 👋</h1>
+        <h1 className="text-3xl font-bold">{t('dashboard.welcome')}, {user?.first_name}! 👋</h1>
         <p className="mt-2 text-slate-400">
-          Here's what's happening with your tasks today
+          {t('dashboard.subtitle')}
         </p>
       </div>
 

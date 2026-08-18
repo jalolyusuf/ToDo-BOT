@@ -35,7 +35,8 @@
   },
   "dashboard": {
     "title": "Bosh sahifa",
-    "welcome": "Xush kelibsiz",
+    "welcome": "Qaytganingizdan xursandmiz",
+    "subtitle": "Bugungi vazifalaringiz",
     "total_tasks": "Jami vazifalar",
     "in_progress": "Jarayonda",
     "completed": "Bajarilgan",
