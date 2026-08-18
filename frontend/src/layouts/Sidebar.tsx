@@ -67,10 +67,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* User Profile */}
         {user && (
-          <div className="border-b border-slate-800 p-4">
+          <Link
+            to="/profile"
+            onClick={onClose}
+            className="block border-b border-slate-800 p-4 hover:bg-slate-800/50 transition-colors"
+          >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white font-semibold">
-                {user.first_name.charAt(0)}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-blue-500 text-white font-semibold">
+                {user.first_name.charAt(0)}{user.last_name?.charAt(0) || ''}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-50 truncate">
@@ -81,7 +85,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 )}
               </div>
             </div>
-          </div>
+          </Link>
         )}
 
         {/* Navigation */}

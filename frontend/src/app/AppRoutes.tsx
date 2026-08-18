@@ -7,6 +7,8 @@ import { TaskDetailPage } from '../pages/TaskDetailPage';
 import { TaskFormPage } from '../pages/TaskFormPage';
 import { GroupsPage } from '../pages/GroupsPage';
 import { GroupDetailPage } from '../pages/GroupDetailPage';
+import { ProfilePage } from '../pages/ProfilePage';
+import { SettingsPage } from '../pages/SettingsPage';
 
 export function AppRoutes() {
   return (
@@ -27,9 +29,12 @@ export function AppRoutes() {
             <Route path="/groups" element={<GroupsPage />} />
             <Route path="/groups/:groupId" element={<GroupDetailPage />} />
 
+            {/* Profile & Settings */}
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+
             {/* Placeholder routes */}
             <Route path="/analytics" element={<div className="text-center py-12 text-slate-400">Analytics page coming soon...</div>} />
-            <Route path="/settings" element={<div className="text-center py-12 text-slate-400">Settings page coming soon...</div>} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
