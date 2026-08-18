@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   HomeIcon,
   CheckCircleIcon,
+  ViewColumnsIcon,
   UserGroupIcon,
   ChartBarIcon,
   Cog6ToothIcon,
@@ -20,6 +21,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: HomeIcon },
   { to: '/tasks', label: 'Tasks', icon: CheckCircleIcon },
+  { to: '/kanban', label: 'Kanban', icon: ViewColumnsIcon },
   { to: '/groups', label: 'Groups', icon: UserGroupIcon },
   { to: '/analytics', label: 'Analytics', icon: ChartBarIcon },
   { to: '/settings', label: 'Settings', icon: Cog6ToothIcon },

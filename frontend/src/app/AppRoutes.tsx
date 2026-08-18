@@ -5,6 +5,7 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { TasksPage } from '../pages/TasksPage';
 import { TaskDetailPage } from '../pages/TaskDetailPage';
 import { TaskFormPage } from '../pages/TaskFormPage';
+import { KanbanPage } from '../pages/KanbanPage';
 import { GroupsPage } from '../pages/GroupsPage';
 import { GroupDetailPage } from '../pages/GroupDetailPage';
 import { ProfilePage } from '../pages/ProfilePage';
@@ -25,6 +26,7 @@ export function AppRoutes() {
             <Route path="/tasks/new" element={<TaskFormPage />} />
             <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
             <Route path="/tasks/:taskId/edit" element={<TaskFormPage />} />
+            <Route path="/kanban" element={<KanbanPage />} />
 
             {/* Groups */}
             <Route path="/groups" element={<GroupsPage />} />
