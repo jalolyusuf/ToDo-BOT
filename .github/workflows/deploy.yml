@@ -25,7 +25,8 @@ jobs:
           cd $HOME/Downloads/ToDo-BOT || exit 1
 
           echo "📥 Pulling latest code..."
-          git pull origin main
+          git fetch origin main
+          git reset --hard origin/main
 
           echo "🔧 Updating bot token..."
           sed -i "s|TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN|" .env
