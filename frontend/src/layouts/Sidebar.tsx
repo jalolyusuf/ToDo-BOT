@@ -54,8 +54,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Header */}
         <div className="flex h-16 items-center justify-between border-b border-slate-800 px-6">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">📋</span>
-            <h1 className="text-lg font-bold text-slate-50">Task Platform</h1>
+            <img src="/logo.png" alt="Task Manager" className="h-10 w-10 rounded-lg" />
+            <h1 className="text-lg font-bold text-slate-50">Task Manager</h1>
           </div>
           <button
             onClick={onClose}
