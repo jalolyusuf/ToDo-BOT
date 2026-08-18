@@ -9,6 +9,7 @@ import { GroupsPage } from '../pages/GroupsPage';
 import { GroupDetailPage } from '../pages/GroupDetailPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { SettingsPage } from '../pages/SettingsPage';
+import { AnalyticsPage } from '../pages/AnalyticsPage';
 
 export function AppRoutes() {
   return (
@@ -33,8 +34,8 @@ export function AppRoutes() {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
 
-            {/* Placeholder routes */}
-            <Route path="/analytics" element={<div className="text-center py-12 text-slate-400">Analytics page coming soon...</div>} />
+            {/* Analytics */}
+            <Route path="/analytics" element={<AnalyticsPage />} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
