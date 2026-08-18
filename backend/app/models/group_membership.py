@@ -34,12 +34,12 @@ class GroupMembership(ModelBase):
     role: Mapped[MembershipRole] = mapped_column(
         SQLEnum(MembershipRole, native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
-        default=MembershipRole.MEMBER
+        default=MembershipRole.MEMBER.value
     )
     status: Mapped[MembershipStatus] = mapped_column(
         SQLEnum(MembershipStatus, native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
-        default=MembershipStatus.ACTIVE
+        default=MembershipStatus.ACTIVE.value
     )
 
     # Relationships

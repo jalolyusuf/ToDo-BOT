@@ -34,12 +34,12 @@ class Task(ModelBase):
     status: Mapped[TaskStatus] = mapped_column(
         SQLEnum(TaskStatus, native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
-        default=TaskStatus.CREATED
+        default=TaskStatus.CREATED.value
     )
     priority: Mapped[TaskPriority] = mapped_column(
         SQLEnum(TaskPriority, native_enum=True, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
-        default=TaskPriority.NORMAL
+        default=TaskPriority.NORMAL.value
     )
     deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

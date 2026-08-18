@@ -160,9 +160,9 @@ async def list_user_tasks(
     # Apply filters
     if filters:
         if filters.status is not None:
-            stmt = stmt.where(Task.status == filters.status)
+            stmt = stmt.where(Task.status == filters.status.value)
         if filters.priority is not None:
-            stmt = stmt.where(Task.priority == filters.priority)
+            stmt = stmt.where(Task.priority == filters.priority.value)
         if filters.assignee_id is not None:
             stmt = stmt.where(Task.assignee_id == filters.assignee_id)
         if filters.creator_id is not None:
@@ -234,8 +234,8 @@ async def assign_task(
     Note: Authorization check must be done in route handler.
     """
     task.assignee_id = assignee_id
-    if assignee_id is not None and task.status == TaskStatus.CREATED:
-        task.status = TaskStatus.ASSIGNED
+    if assignee_id is not None and task.status == TaskStatus.CREATED.value:
+        task.status = TaskStatus.ASSIGNED.value
 
     await session.commit()
     await session.refresh(task)
