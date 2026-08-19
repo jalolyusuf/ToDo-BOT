@@ -1,100 +1,67 @@
-# 📝 Task Manager Bot
+# 🤖 Claude AI Assistant Bot
 
-> Professional task management system with Telegram integration and modern web interface
+> Intelligent AI assistant powered by Claude (AWS Bedrock) with Telegram integration
 
-[🇺🇿 O'zbekcha](./docs/README.uz.md) | [🇬🇧 English](./docs/README.en.md) | [🇷🇺 Русский](./docs/README.ru.md)
-
-![Task Manager](./assets/Logo.png)
+![Claude AI Assistant](./assets/Logo.png)
 
 ## ✨ Features
 
-### 🤖 Telegram Integration
-- Native Telegram Mini App
-- WebApp SDK integration
-- Bot commands and notifications
-- Secure authentication via Telegram
+### 🤖 AI-Powered Assistance
+- Powered by **Claude AI** (Haiku model) via AWS Bedrock
+- Natural language understanding and conversation
+- Context-aware responses
+- Multi-turn conversation support
 
-### 📋 Task Management
-- Create, edit, delete tasks
-- Task priorities (Low, Normal, High, Urgent)
-- Task statuses (Created, Assigned, In Progress, Review, Completed)
-- Deadlines and reminders
-- Task assignment to users
-- Bulk actions (multi-select, bulk delete, bulk status change)
+### 💬 Telegram Integration
+- Full Telegram Bot integration
+- Support for all message types:
+  - 📝 Text messages
+  - 📷 Photos & Images
+  - 📄 Documents
+  - 🎥 Videos
+  - 🎵 Audio & Voice messages
+- Real-time message processing
+- Webhook-based updates
 
-### 🎯 Kanban Board
-- Drag-and-drop interface
-- 5 column workflow
-- Real-time status updates
-- Smooth animations
-- Mobile-responsive
+### 🌐 Web Interface
+- Modern React-based chat interface
+- Real-time conversation view
+- Markdown rendering for formatted responses
+- Responsive design
 
-### 👥 Group Collaboration
-- Create and manage groups
-- Group member management
-- Role-based access (Owner, Member)
-- Group tasks
-- Member statistics
-
-### 📊 Analytics & Reports
-- Task completion metrics
-- Timeline charts
-- Status distribution (pie chart)
-- Priority distribution (bar chart)
-- Group performance leaderboard
-- Date range filtering (7/30/90 days)
-
-### 🌐 Multi-language Support
-- 🇺🇿 O'zbekcha
-- 🇬🇧 English
-- 🇷🇺 Русский
-- Language switcher in UI
-- Persistent language selection
-
-### 🎨 Modern UI/UX
-- Dark theme design
-- Responsive layout (mobile, tablet, desktop)
-- Smooth transitions and animations
-- Professional admin panel interface
-- Sidebar navigation
-- Search and advanced filters
+### 💾 Conversation Management
+- Persistent conversation history
+- Multi-conversation support
+- Message tracking and token usage
+- Context window management
 
 ## 🛠 Technology Stack
 
 ### Backend
 - **Python 3.12** - Core language
-- **FastAPI** - Modern web framework
-- **SQLAlchemy** - ORM
+- **FastAPI** - Modern async web framework
+- **SQLAlchemy** - Async ORM
 - **PostgreSQL** - Database
-- **Redis** - Caching and sessions
-- **Alembic** - Database migrations
-- **python-telegram-bot** - Telegram API
+- **AWS Bedrock** - Claude AI integration (boto3)
+- **aiogram** - Telegram Bot API
 
 ### Frontend
 - **React 18** - UI library
 - **TypeScript** - Type safety
 - **Vite** - Build tool
-- **React Router** - Navigation
-- **Zustand** - State management
 - **TailwindCSS** - Styling
-- **Recharts** - Data visualization
-- **@dnd-kit** - Drag and drop
-- **i18next** - Internationalization
-- **React Hot Toast** - Notifications
-- **Headless UI** - Accessible components
+- **React Router** - Navigation
+- **React Markdown** - Markdown rendering
 
-### DevOps
+### Infrastructure
 - **Docker & Docker Compose** - Containerization
-- **GitHub Actions** - CI/CD
-- **Self-hosted Runner** - Deployment automation
-- **Nginx** - Reverse proxy and static file serving
+- **Nginx** - Web server (production)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Docker & Docker Compose
-- Node.js 22+ (for local development)
-- Python 3.12+ (for local development)
+- AWS Account with Bedrock access
 - Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
 
 ### 1. Clone Repository
@@ -107,55 +74,126 @@ cd ToDo-BOT
 Create `.env` file in project root:
 
 ```env
+# Database
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/claude_ai_bot
+
+# AWS Bedrock
+AWS_ACCESS_KEY_ID=your_aws_access_key_here
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key_here
+AWS_REGION=us-east-1
+BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+
 # Telegram
 TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_WEBHOOK_URL=https://your-domain.com/api/v1/telegram/webhook
+TELEGRAM_WEBHOOK_SECRET=your_random_secret_here
 
-# Database
-DATABASE_URL=postgresql://postgres:postgres@db:5432/todobot
-
-# Redis
-REDIS_URL=redis://redis:6379/0
-
-# Backend
-SECRET_KEY=your-secret-key-here
-BACKEND_CORS_ORIGINS=["http://localhost:5173","https://your-domain.com"]
-
-# Frontend
-VITE_API_BASE_URL=
+# Security
+SECRET_KEY=your-super-secret-key-change-this
 ```
 
-### 3. Run with Docker
+### 3. AWS Bedrock Setup
+
+**Enable Claude Models in AWS Bedrock:**
+1. Go to [AWS Bedrock Console](https://console.aws.amazon.com/bedrock/)
+2. Navigate to "Model access"
+3. Request access to **Anthropic Claude** models
+4. Wait for approval (usually instant for Haiku)
+
+**Create IAM User with Bedrock Access:**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": "arn:aws:bedrock:*::foundation-model/anthropic.claude-*"
+    }
+  ]
+}
+```
+
+### 4. Run with Docker
 ```bash
-# Build and start all services
+# Start all services
 docker compose up -d --build
 
 # View logs
 docker compose logs -f
 
-# Run migrations
-docker compose exec backend alembic upgrade head
+# Check status
+docker compose ps
 ```
 
-### 4. Access Application
+### 5. Setup Telegram Webhook
+```bash
+curl -X POST "https://api.telegram.org/bot<YOUR_TOKEN>/setWebhook" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-domain.com/api/v1/telegram/webhook",
+    "secret_token": "your_webhook_secret"
+  }'
+```
+
+### 6. Access Application
 - **Web Interface**: http://localhost
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 - **Telegram Bot**: https://t.me/your_bot_username
 
-## 📱 Telegram Bot Setup
+## 📖 Usage
 
-1. Create bot with [@BotFather](https://t.me/BotFather)
-2. Get bot token
-3. Set webhook:
-   ```bash
-   curl -X POST "https://api.telegram.org/bot<YOUR_TOKEN>/setWebhook" \
-     -H "Content-Type: application/json" \
-     -d '{"url":"https://your-domain.com/api/v1/telegram/webhook"}'
-   ```
-4. Configure Mini App in BotFather:
-   - Send `/setmenubutton`
-   - Choose your bot
-   - Set URL: `https://your-domain.com`
+### Telegram Bot Commands
+- `/start` - Welcome message and bot introduction
+- `/new` - Start a new conversation
+- `/help` - Show help and available features
+
+### Chatting with the Bot
+Simply send any message to the bot:
+- **Questions**: Ask anything, get intelligent responses
+- **Code**: Request code examples or explanations
+- **Analysis**: Send documents or images (coming soon)
+- **Conversation**: Natural multi-turn conversations
+
+## 📊 Database Schema
+
+```
+users
+  ├─ id (uuid)
+  ├─ telegram_id (bigint)
+  ├─ username
+  ├─ first_name
+  ├─ last_name
+  └─ language_code
+
+conversations
+  ├─ id (uuid)
+  ├─ user_id (fk → users)
+  ├─ title
+  ├─ status (active/archived/deleted)
+  └─ summary
+
+messages
+  ├─ id (uuid)
+  ├─ conversation_id (fk → conversations)
+  ├─ role (user/assistant/system)
+  ├─ content (text)
+  ├─ input_tokens
+  ├─ output_tokens
+  └─ telegram_message_id
+
+attachments
+  ├─ id (uuid)
+  ├─ message_id (fk → messages)
+  ├─ file_type (photo/video/document/audio/voice)
+  ├─ file_id (telegram)
+  ├─ file_name
+  └─ mime_type
+```
 
 ## 🔧 Development
 
@@ -165,7 +203,7 @@ cd backend
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -186,161 +224,53 @@ npm run dev
 
 # Build for production
 npm run build
-
-# Type checking
-npm run typecheck
 ```
 
-### Database Migrations
-```bash
-# Create new migration
-docker compose exec backend alembic revision --autogenerate -m "description"
+## 💰 Cost Estimation (AWS Bedrock)
 
-# Apply migrations
-docker compose exec backend alembic upgrade head
+**Claude 3 Haiku** pricing:
+- Input: ~$0.25 per 1M tokens
+- Output: ~$1.25 per 1M tokens
 
-# Rollback migration
-docker compose exec backend alembic downgrade -1
-```
+**Estimated monthly costs:**
+- Light usage (1K messages): $2-5
+- Medium usage (10K messages): $10-20
+- Heavy usage (100K messages): $50-100
 
-## 🚢 Deployment
+*Actual costs depend on conversation length and complexity.*
 
-### GitHub Actions (Self-hosted Runner)
-
-1. **Setup Runner on Server:**
-   ```bash
-   # On your Ubuntu server
-   mkdir ~/actions-runner && cd ~/actions-runner
-   
-   # Download runner
-   curl -o actions-runner-linux-x64-2.311.0.tar.gz -L \
-     https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz
-   
-   tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
-   
-   # Configure
-   ./config.sh --url https://github.com/YOUR_USERNAME/ToDo-BOT --token YOUR_TOKEN
-   
-   # Install as service
-   sudo ./svc.sh install
-   sudo ./svc.sh start
-   ```
-
-2. **Add GitHub Secrets:**
-   - `TELEGRAM_BOT_TOKEN` - Your Telegram bot token
-
-3. **Push to Main Branch:**
-   - Actions automatically deploy on every push to `main`
-   - Rebuilds containers
-   - Runs migrations
-   - Restarts services
-
-### Manual Deployment
-
-```bash
-# On your server
-cd ~/ToDo-BOT
-
-# Pull latest changes
-git pull origin main
-
-# Update environment variables
-nano .env
-
-# Rebuild and restart
-docker compose down
-docker compose up -d --build
-
-# Run migrations
-docker compose exec -T backend alembic upgrade head
-
-# Set webhook
-curl -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook" \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://your-domain.com/api/v1/telegram/webhook"}'
-```
-
-## 📖 API Documentation
-
-Interactive API documentation is available at:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-### Key Endpoints
-
-#### Authentication
-- `GET /api/v1/auth/me` - Get current user
-
-#### Tasks
-- `GET /api/v1/tasks` - List tasks (with filters)
-- `POST /api/v1/tasks` - Create task
-- `GET /api/v1/tasks/{id}` - Get task details
-- `PATCH /api/v1/tasks/{id}` - Update task
-- `DELETE /api/v1/tasks/{id}` - Delete task
-- `PATCH /api/v1/tasks/{id}/status` - Update task status
-
-#### Groups
-- `GET /api/v1/groups` - List groups
-- `POST /api/v1/groups` - Create group
-- `GET /api/v1/groups/{id}` - Get group details
-- `DELETE /api/v1/groups/{id}` - Delete group
-- `GET /api/v1/groups/{id}/members` - List members
-- `DELETE /api/v1/groups/{id}/members/{user_id}` - Remove member
-
-## 🏗 Project Structure
+## 🏗 Architecture
 
 ```
-ToDo-BOT/
-├── backend/
-│   ├── app/
-│   │   ├── api/          # API endpoints
-│   │   ├── models/       # Database models
-│   │   ├── services/     # Business logic
-│   │   ├── schemas/      # Pydantic schemas
-│   │   └── main.py       # FastAPI app
-│   ├── alembic/          # Database migrations
-│   ├── Dockerfile
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── app/          # App setup and routing
-│   │   ├── components/   # Reusable components
-│   │   ├── features/     # Feature modules
-│   │   ├── layouts/      # Layout components
-│   │   ├── pages/        # Page components
-│   │   ├── shared/       # Shared utilities
-│   │   └── i18n/         # Translations
-│   ├── public/
-│   ├── Dockerfile
-│   └── package.json
-├── .github/
-│   └── workflows/
-│       └── deploy.yml    # CI/CD workflow
-├── docker-compose.yml
-└── README.md
+┌─────────────────┐
+│  Telegram User  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐      ┌──────────────┐
+│  Telegram Bot   │─────▶│   FastAPI    │
+│   (aiogram)     │      │   Backend    │
+└─────────────────┘      └──────┬───────┘
+                                │
+                    ┌───────────┼───────────┐
+                    │           │           │
+                    ▼           ▼           ▼
+            ┌──────────┐  ┌──────────┐  ┌─────────┐
+            │ AWS      │  │PostgreSQL│  │  Web    │
+            │ Bedrock  │  │ Database │  │Frontend │
+            │(Claude)  │  │          │  │ (React) │
+            └──────────┘  └──────────┘  └─────────┘
 ```
 
-## 🤝 Contributing
+## 🔒 Security
 
-Contributions are welcome! Please follow these steps:
+- Webhook secret validation
+- Environment-based configuration
+- Secure token management
+- AWS IAM-based access control
+- CORS configuration
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Commit Convention
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation changes
-- `style:` - Code style changes
-- `refactor:` - Code refactoring
-- `test:` - Test additions/changes
-- `chore:` - Build process or auxiliary tool changes
-
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -353,10 +283,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Built with ❤️ using modern web technologies
-- Telegram Bot API for seamless integration
-- Open source community for amazing tools
-- Claude Code AI for development assistance
+- Built with ❤️ using Claude AI
+- Powered by AWS Bedrock
+- Telegram Bot API for messaging
+- FastAPI and React for modern web development
 
 ---
 

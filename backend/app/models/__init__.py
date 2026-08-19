@@ -1,17 +1,16 @@
-"""Application models package."""
+"""Database models."""
 
-from app.models.group import Group
-from app.models.group_membership import GroupMembership, MembershipRole, MembershipStatus
-from app.models.task import Task, TaskPriority, TaskStatus
+from app.models.attachment import Attachment, AttachmentType
+from app.models.conversation import Conversation, ConversationStatus
+from app.models.message import Message, MessageRole
 from app.models.user import User
 
 __all__ = [
     "User",
-    "Group",
-    "GroupMembership",
-    "MembershipRole",
-    "MembershipStatus",
-    "Task",
-    "TaskStatus",
-    "TaskPriority",
+    "Conversation",
+    "ConversationStatus",
+    "Message",
+    "MessageRole",
+    "Attachment",
+    "AttachmentType",
 ]

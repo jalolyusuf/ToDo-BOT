@@ -1,37 +1,29 @@
-import uuid
+"""Custom database types."""
+
 from typing import Any
+from uuid import UUID
 
-from sqlalchemy import CHAR
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.engine.interfaces import Dialect
-from sqlalchemy.types import TypeDecorator
+from sqlalchemy import types
 
 
-class GUID(TypeDecorator):
+class GUID(types.TypeDecorator):
+    """Platform-independent GUID type."""
+
+    impl = types.String(36)
     cache_ok = True
-    impl = CHAR
 
-    def load_dialect_impl(self, dialect: Dialect) -> Any:
-        if dialect.name == "postgresql":
-            return dialect.type_descriptor(postgresql.UUID(as_uuid=True))
-        return dialect.type_descriptor(CHAR(36))
-
-    def process_bind_param(self, value: uuid.UUID | str | None, dialect: Dialect) -> str | None:
+    def process_bind_param(self, value: Any, dialect: Any) -> str | None:
+        """Convert UUID to string."""
         if value is None:
             return None
-        if dialect.name == "postgresql":
+        if isinstance(value, UUID):
             return str(value)
-        if isinstance(value, uuid.UUID):
-            return str(value)
-        return str(uuid.UUID(value))
+        return str(value)
 
-    def process_result_value(
-        self,
-        value: str | uuid.UUID | None,
-        dialect: Dialect,
-    ) -> uuid.UUID | None:
+    def process_result_value(self, value: Any, dialect: Any) -> UUID | None:
+        """Convert string to UUID."""
         if value is None:
             return None
-        if isinstance(value, uuid.UUID):
+        if isinstance(value, UUID):
             return value
-        return uuid.UUID(value)
+        return UUID(value)

@@ -1,44 +1,39 @@
-from sqlalchemy import BigInteger, Boolean, String
+"""User model for Telegram users."""
+
+from sqlalchemy import BigInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import ModelBase
 
 
 class User(ModelBase):
+    """User model representing Telegram users."""
+
     __tablename__ = "users"
 
-    telegram_user_id: Mapped[int] = mapped_column(
-        BigInteger,
-        nullable=False,
-        unique=True,
-        index=True,
-    )
-    username: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    first_name: Mapped[str] = mapped_column(String(128), nullable=False)
-    last_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    language_code: Mapped[str | None] = mapped_column(String(16), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    can_create_groups: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Telegram user info
+    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True)
+    username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    first_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    last_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    language_code: Mapped[str | None] = mapped_column(String(10), nullable=True, default="en")
+
+    # User preferences
+    preferred_language: Mapped[str] = mapped_column(String(10), nullable=False, default="en")
 
     # Relationships
-    owned_groups: Mapped[list["Group"]] = relationship(  # type: ignore # noqa: F821
-        "Group",
-        back_populates="owner",
-        cascade="all, delete-orphan",
-    )
-    memberships: Mapped[list["GroupMembership"]] = relationship(  # type: ignore # noqa: F821
-        "GroupMembership",
+    conversations: Mapped[list["Conversation"]] = relationship(
+        "Conversation",
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    created_tasks: Mapped[list["Task"]] = relationship(  # type: ignore # noqa: F821
-        "Task",
-        foreign_keys="Task.creator_id",
-        back_populates="creator",
-        cascade="all, delete-orphan",
-    )
-    assigned_tasks: Mapped[list["Task"]] = relationship(  # type: ignore # noqa: F821
-        "Task",
-        foreign_keys="Task.assignee_id",
-        back_populates="assignee",
-    )
+
+    @property
+    def full_name(self) -> str:
+        """Get user's full name."""
+        if self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        return self.first_name
+
+    def __repr__(self) -> str:
+        return f"<User {self.telegram_id} (@{self.username})>"

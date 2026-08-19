@@ -1,34 +1,36 @@
-from __future__ import annotations
+"""Database session management."""
 
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from collections.abc import AsyncGenerator
 
-from app.core.config import Settings, get_settings
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-engine: AsyncEngine | None = None
-async_session_factory: async_sessionmaker[AsyncSession] | None = None
-
-
-def configure_database(settings: Settings) -> None:
-    global engine, async_session_factory
-
-    engine = create_async_engine(
-        str(settings.database_url),
-        pool_pre_ping=True,
-        pool_size=5,
-        max_overflow=10,
-    )
-
-    async_session_factory = async_sessionmaker(
-        bind=engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
-
+from app.core.config import get_settings
 
 settings = get_settings()
-configure_database(settings)
+
+# Create async engine
+engine = create_async_engine(
+    settings.database_url,
+    echo=settings.debug,
+    pool_pre_ping=True,
+    pool_size=10,
+    max_overflow=20,
+)
+
+# Create session factory
+async_session_factory = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
+
+
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    """Get database session."""
+    async with async_session_factory() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
