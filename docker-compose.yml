@@ -63,7 +63,7 @@ services:
       dockerfile: Dockerfile
     container_name: claude-ai-frontend
     ports:
-      - "80:80"
+      - "8080:80"  # Changed to 8080 to avoid port conflict
     depends_on:
       - backend
     restart: unless-stopped
