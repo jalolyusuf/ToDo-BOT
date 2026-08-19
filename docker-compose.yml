@@ -1,4 +1,4 @@
-version: '3.8'
+# version field is obsolete and removed
 
 services:
   # PostgreSQL Database
@@ -11,8 +11,9 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Port removed - only internal access needed
+    expose:
+      - "5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
