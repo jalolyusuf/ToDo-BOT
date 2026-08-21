@@ -16,18 +16,20 @@ class Settings(BaseSettings):
     )
 
     # Application
-    app_name: str = "Claude AI Assistant Bot"
+    app_name: str = "Todo Bot - Vazifa Eslatuvchi"
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
 
     # Database
     database_url: str
 
-    # OpenAI
+    # Claude AI (for task parsing)
+    claude_api_key: str
+    claude_model: str = "claude-3-haiku-20240307"
+
+    # OpenAI (for speech-to-text)
     openai_api_key: str
     openai_model: str = "gpt-4o-mini"
-    max_tokens: int = 4096
-    temperature: float = 1.0
 
     # Telegram
     telegram_bot_token: str

@@ -20,13 +20,7 @@ class User(ModelBase):
 
     # User preferences
     preferred_language: Mapped[str] = mapped_column(String(10), nullable=False, default="en")
-
-    # Relationships
-    conversations: Mapped[list["Conversation"]] = relationship(
-        "Conversation",
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
+    reminder_time: Mapped[str] = mapped_column(String(5), nullable=False, default="09:00")  # HH:MM format
 
     @property
     def full_name(self) -> str:

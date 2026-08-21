@@ -1,15 +1,11 @@
-"""Telegram bot setup and handlers."""
+"""Telegram bot setup."""
 
-from aiogram import Bot, Dispatcher, F, types
+from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import Command
 
 from app.core.config import get_settings
-from app.db import async_session_factory
-from app.models import AttachmentType
-from app.services.ai_service import ai_service
-from app.services.user_service import get_or_create_user
+from app.telegram.handlers import router
 
 settings = get_settings()
 
@@ -25,29 +21,8 @@ def create_bot() -> Bot:
 def create_dispatcher() -> Dispatcher:
     """Create and configure dispatcher with all handlers."""
     dp = Dispatcher()
-
-    # Register handlers
-    dp.message.register(handle_start, Command("start"))
-    dp.message.register(handle_new_conversation, Command("new"))
-    dp.message.register(handle_help, Command("help"))
-
-    # Message type handlers
-    dp.message.register(handle_photo, F.photo)
-    dp.message.register(handle_document, F.document)
-    dp.message.register(handle_video, F.video)
-    dp.message.register(handle_audio, F.audio)
-    dp.message.register(handle_voice, F.voice)
-    dp.message.register(handle_video_note, F.video_note)
-
-    # Text messages (catch-all)
-    dp.message.register(handle_text_message)
-
+    dp.include_router(router)
     return dp
-
-
-async def handle_start(message: types.Message) -> None:
-    """Handle /start command."""
-    user = message.from_user
     if not user:
         return
 
