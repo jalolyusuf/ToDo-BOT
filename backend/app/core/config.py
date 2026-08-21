@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     # AWS Bedrock
     aws_access_key_id: str
     aws_secret_access_key: str
-    aws_region: str = "us-east-1"
-    bedrock_model_id: str = "anthropic.claude-3-haiku-20240307-v1:0"
+    aws_region: str = "eu-north-1"
+    bedrock_model_id: str = "anthropic.claude-haiku-4-5"
     max_tokens: int = 4096
     temperature: float = 1.0
 
