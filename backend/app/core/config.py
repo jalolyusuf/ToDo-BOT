@@ -23,11 +23,9 @@ class Settings(BaseSettings):
     # Database
     database_url: str
 
-    # AWS Bedrock
-    aws_access_key_id: str
-    aws_secret_access_key: str
-    aws_region: str = "eu-north-1"
-    bedrock_model_id: str = "anthropic.claude-haiku-4-5"
+    # OpenAI
+    openai_api_key: str
+    openai_model: str = "gpt-4o-mini"
     max_tokens: int = 4096
     temperature: float = 1.0
 

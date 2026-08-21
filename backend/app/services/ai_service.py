@@ -1,4 +1,4 @@
-"""AI service for handling conversations with Claude."""
+"""AI service for handling conversations with GPT."""
 
 from typing import Any
 
@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import Conversation, Message, MessageRole, User
-from app.services.bedrock_client import bedrock_client
+from app.services.openai_client import openai_client
 
 
 class AIService:
@@ -124,9 +124,9 @@ If you receive images or documents, analyze them and provide relevant insights."
         # Add current message to context
         context.append({"role": "user", "content": user_message})
 
-        # Call Claude API
+        # Call OpenAI API
         try:
-            response = await bedrock_client.invoke_claude(
+            response = await openai_client.invoke_gpt(
                 messages=context,
                 system=self.SYSTEM_PROMPT,
             )
@@ -135,8 +135,7 @@ If you receive images or documents, analyze them and provide relevant insights."
             assistant_content = ""
             if "content" in response:
                 for content_block in response["content"]:
-                    if content_block.get("type") == "text":
-                        assistant_content += content_block.get("text", "")
+                    assistant_content += content_block.get("text", "")
 
             # Get token usage
             usage = response.get("usage", {})
