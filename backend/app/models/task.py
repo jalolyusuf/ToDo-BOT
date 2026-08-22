@@ -2,11 +2,13 @@
 
 from datetime import datetime
 from enum import Enum
+from uuid import UUID
 
 from sqlalchemy import BigInteger, DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.db.types import GUID
 
 
 class TaskStatus(str, Enum):
@@ -31,7 +33,7 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, index=True, nullable=False)
+    user_id: Mapped[UUID] = mapped_column(GUID, index=True, nullable=False)
 
     # Task details
     task_text: Mapped[str] = mapped_column(Text, nullable=False)
