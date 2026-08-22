@@ -1,0 +1,165 @@
+"""Reminder service for sending scheduled notifications."""
+
+import logging
+from datetime import datetime, timedelta
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db import async_session_factory
+from app.models import Task, TaskStatus, User
+from app.telegram.bot import create_bot
+
+logger = logging.getLogger(__name__)
+
+
+class ReminderService:
+    """Service for checking and sending reminders."""
+
+    @staticmethod
+    async def check_and_send_reminders():
+        """
+        Check for tasks that need reminders and send notifications.
+
+        Runs periodically (every minute).
+        """
+        logger.info("Checking for reminders...")
+
+        try:
+            async with async_session_factory() as session:
+                # Get tasks that need reminders
+                now = datetime.now()
+
+                # Find tasks where:
+                # 1. Status is PENDING
+                # 2. Has due_date
+                # 3. Due date/time has arrived
+                # 4. Reminder not sent yet
+                stmt = (
+                    select(Task)
+                    .where(Task.status == TaskStatus.PENDING)
+                    .where(Task.due_date.isnot(None))
+                    .where(Task.reminder_sent == False)
+                )
+
+                result = await session.execute(stmt)
+                tasks = result.scalars().all()
+
+                sent_count = 0
+                for task in tasks:
+                    # Check if reminder time has arrived
+                    if await ReminderService._should_send_reminder(task, now):
+                        await ReminderService._send_reminder(session, task)
+                        sent_count += 1
+
+                logger.info(f"Sent {sent_count} reminders")
+
+        except Exception as e:
+            logger.error(f"Error checking reminders: {e}")
+
+    @staticmethod
+    async def _should_send_reminder(task: Task, now: datetime) -> bool:
+        """Check if reminder should be sent for this task."""
+        if not task.due_date:
+            return False
+
+        # Combine date and time
+        due_datetime = task.due_date
+
+        if task.due_time:
+            # Parse time (HH:MM format)
+            try:
+                time_parts = task.due_time.split(":")
+                hour = int(time_parts[0])
+                minute = int(time_parts[1]) if len(time_parts) > 1 else 0
+
+                due_datetime = due_datetime.replace(hour=hour, minute=minute, second=0)
+            except Exception:
+                pass
+
+        # Send reminder if due time has arrived (within 1 minute tolerance)
+        return due_datetime <= now
+
+    @staticmethod
+    async def _send_reminder(session: AsyncSession, task: Task):
+        """Send reminder notification to user."""
+        try:
+            # Get user
+            stmt = select(User).where(User.id == task.user_id)
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+
+            if not user or not user.telegram_id:
+                logger.warning(f"User not found for task {task.id}")
+                return
+
+            # Create bot
+            bot = create_bot()
+
+            # Format message
+            date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else ""
+            time_str = f" soat {task.due_time}" if task.due_time else ""
+
+            message = (
+                f"🔔 **ESLATMA!**\n\n"
+                f"📝 {task.task_text}\n"
+                f"📅 {date_str}{time_str}\n\n"
+                f"Bu vazifani qildingizmi?"
+            )
+
+            # Attachment info
+            if hasattr(task, 'attachments') and task.attachments:
+                attachment_count = len(task.attachments)
+                message += f"\n📎 {attachment_count} ta media bor"
+
+            # Interactive buttons
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text="✅ Bajarildi",
+                            callback_data=f"reminder_done_{task.id}"
+                        ),
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text="⏰ 1 soatga kechiktir",
+                            callback_data=f"reminder_snooze_1h_{task.id}"
+                        ),
+                        InlineKeyboardButton(
+                            text="📅 Ertaga sur",
+                            callback_data=f"reminder_snooze_1d_{task.id}"
+                        ),
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text="🗑️ O'chirish",
+                            callback_data=f"reminder_delete_{task.id}"
+                        ),
+                    ],
+                ]
+            )
+
+            # Send message
+            await bot.send_message(
+                chat_id=user.telegram_id,
+                text=message,
+                parse_mode="Markdown",
+                reply_markup=keyboard
+            )
+
+            # Mark reminder as sent
+            task.reminder_sent = True
+            task.reminder_sent_at = datetime.now()
+            await session.commit()
+
+            logger.info(f"Reminder sent for task {task.id}")
+
+            await bot.session.close()
+
+        except Exception as e:
+            logger.error(f"Error sending reminder for task {task.id}: {e}")
+
+
+reminder_service = ReminderService()
