@@ -5,7 +5,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from app.core.config import get_settings
-from app.telegram.handlers import router
+from app.telegram import conversational_handlers, handlers
 
 settings = get_settings()
 
@@ -21,5 +21,9 @@ def create_bot() -> Bot:
 def create_dispatcher() -> Dispatcher:
     """Create and configure dispatcher with all handlers."""
     dp = Dispatcher()
-    dp.include_router(router)
+
+    # Register routers (order matters! Conversational first for state handling)
+    dp.include_router(conversational_handlers.router)  # State-aware handlers
+    dp.include_router(handlers.router)  # Basic commands (/start, /list, etc.)
+
     return dp

@@ -1,17 +1,12 @@
-"""Telegram bot handlers for task management."""
+"""Basic Telegram bot command handlers."""
 
-import os
-from datetime import datetime
-
-from aiogram import F, Router, types
+from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from app.core.config import get_settings
 from app.db import async_session_factory
-from app.models import Attachment, AttachmentType, TaskSource, TaskStatus
-from app.services.file_service import file_service
-from app.services.speech_service import speech_service
+from app.models import TaskStatus
 from app.services.task_service import task_service
 from app.services.user_service import get_or_create_user
 
@@ -35,23 +30,23 @@ async def cmd_start(message: types.Message):
 
     welcome_text = """🎯 **Vazifa Eslatuvchi Bot**
 
-Vazifalaringizni boshqaring!
+Vazifalaringizni boshqaring va eslatmalar oling!
 
-**Qanday ishlaydi:**
-• Matn yoki ovoz xabari yuboring - vazifa qo'shiladi
-• Sana avtomatik ajratiladi (masalan: "ertaga", "3-sentabrda")
-• Rasm, video, ovoz va hujjatlar ham qo'shish mumkin!
+**Yangi vazifa yaratish:**
+1. /new - vazifa yaratishni boshlang
+2. Matn, ovoz, rasm, video yuboring
+3. /date - sanani belgilang
+4. ✅ Tayyor!
 
-**Buyruqlar:**
-/webapp - Web interfeys (tavsiya etiladi!)
-/list - Vazifalar ro'yxati
-/done <id> - Bajarildi
-/delete <id> - O'chirish
+**Boshqa buyruqlar:**
+/webapp - Web interfeys
+/list - Barcha vazifalar
+/done <id> - Vazifani bajarildi deb belgilash
+/delete <id> - Vazifani o'chirish
+/cancel - Vazifa yaratishni bekor qilish
 
-**Misol:**
-"3-sentabrda hisobot topshirish" ✅"""
+**Web App:** Barcha vazifalarni ko'rish, media ko'rish va boshqarish!"""
 
-    # Create Web App button
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -59,11 +54,32 @@ Vazifalaringizni boshqaring!
                     text="📋 Vazifalar (Web App)",
                     web_app=WebAppInfo(url=settings.telegram_webhook_url)
                 )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="➕ Yangi vazifa",
+                    callback_data="new_task"
+                )
             ]
         ]
     )
 
     await message.answer(welcome_text, parse_mode="Markdown", reply_markup=keyboard)
+
+
+@router.callback_query(lambda c: c.data == "new_task")
+async def callback_new_task(callback: types.CallbackQuery):
+    """Handle new task button."""
+    await callback.answer()
+    await callback.message.answer(
+        "📝 **Yangi vazifa yaratish**\n\n"
+        "Vazifa haqida gapiring:\n"
+        "• Matn yuboring\n"
+        "• Ovozli xabar yuboring\n"
+        "• Rasm, video yoki fayl yuboring\n\n"
+        "Tayyor bo'lgach **/date** buyrug'ini yuboring.",
+        parse_mode="Markdown"
+    )
 
 
 @router.message(Command("webapp"))
@@ -80,7 +96,8 @@ async def cmd_webapp(message: types.Message):
         ]
     )
     await message.answer(
-        "🌐 **Web interfeys**\n\nQulayroq foydalanish uchun quyidagi tugmani bosing:",
+        "🌐 **Web interfeys**\n\n"
+        "Barcha vazifalarni ko'rish, media eshitish/ko'rish va boshqarish uchun quyidagi tugmani bosing:",
         parse_mode="Markdown",
         reply_markup=keyboard
     )
@@ -88,7 +105,7 @@ async def cmd_webapp(message: types.Message):
 
 @router.message(Command("list"))
 async def cmd_list(message: types.Message):
-    """Show all tasks."""
+    """Show all pending tasks."""
     async with async_session_factory() as session:
         user = await get_or_create_user(
             session,
@@ -102,17 +119,25 @@ async def cmd_list(message: types.Message):
         tasks = await task_service.get_tasks(session, user.id, TaskStatus.PENDING)
 
     if not tasks:
-        await message.answer("📝 Vazifalar yo'q. Matn yoki ovoz yuboring!")
+        await message.answer(
+            "📝 Vazifalar yo'q.\n\n"
+            "Yangi vazifa yaratish uchun /new buyrug'ini yuboring!",
+            parse_mode="Markdown"
+        )
         return
 
     text = "📝 **Sizning vazifalaringiz:**\n\n"
-    for task in tasks:
-        status_emoji = "✅" if task.status == TaskStatus.DONE else "⏳"
+    for task in tasks[:10]:  # Show max 10
         date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana yo'q"
         time_str = f" {task.due_time}" if task.due_time else ""
+        attachment_count = len(task.attachments) if hasattr(task, 'attachments') else 0
+        media_icon = f" 📎{attachment_count}" if attachment_count > 0 else ""
 
-        text += f"{status_emoji} **#{task.id}** - {task.task_text}\n"
-        text += f"   📅 {date_str}{time_str}\n\n"
+        text += f"**#{task.id}** - {task.task_text[:50]}\n"
+        text += f"   📅 {date_str}{time_str}{media_icon}\n\n"
+
+    if len(tasks) > 10:
+        text += f"\n_...va yana {len(tasks) - 10} ta vazifa. /webapp da ko'ring!_"
 
     await message.answer(text, parse_mode="Markdown")
 
@@ -123,7 +148,10 @@ async def cmd_done(message: types.Message):
     try:
         task_id = int(message.text.split()[1])
     except (IndexError, ValueError):
-        await message.answer("❌ Xato! Foydalanish: /done <id>\n\nMisol: /done 5")
+        await message.answer(
+            "❌ Xato! Foydalanish: `/done <id>`\n\nMisol: `/done 5`",
+            parse_mode="Markdown"
+        )
         return
 
     async with async_session_factory() as session:
@@ -141,7 +169,7 @@ async def cmd_done(message: types.Message):
     if task:
         await message.answer(f"✅ Bajarildi: {task.task_text}")
     else:
-        await message.answer("❌ Vazifa topilmadi")
+        await message.answer("❌ Vazifa topilmadi yoki sizga tegishli emas.")
 
 
 @router.message(Command("delete"))
@@ -150,7 +178,10 @@ async def cmd_delete(message: types.Message):
     try:
         task_id = int(message.text.split()[1])
     except (IndexError, ValueError):
-        await message.answer("❌ Xato! Foydalanish: /delete <id>\n\nMisol: /delete 5")
+        await message.answer(
+            "❌ Xato! Foydalanish: `/delete <id>`\n\nMisol: `/delete 5`",
+            parse_mode="Markdown"
+        )
         return
 
     async with async_session_factory() as session:
@@ -168,233 +199,4 @@ async def cmd_delete(message: types.Message):
     if success:
         await message.answer("🗑️ O'chirildi")
     else:
-        await message.answer("❌ Vazifa topilmadi")
-
-
-@router.message(F.photo)
-async def handle_photo(message: types.Message):
-    """Handle photo messages with optional caption."""
-    caption = message.caption or "Rasm bilan vazifa"
-
-    async with async_session_factory() as session:
-        user = await get_or_create_user(
-            session,
-            telegram_id=message.from_user.id,
-            username=message.from_user.username,
-            first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name,
-            language_code=message.from_user.language_code,
-        )
-
-        # Create task
-        task = await task_service.create_task_from_text(
-            session,
-            user.id,
-            caption,
-            TaskSource.TEXT,
-        )
-
-        # Download and save photo
-        try:
-            file_data = await file_service.download_telegram_file(message.bot, message, AttachmentType.PHOTO)
-            attachment = Attachment(task_id=task.id, **file_data)
-            session.add(attachment)
-            await session.commit()
-        except Exception as e:
-            print(f"Error saving photo: {e}")
-
-    date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
-    time_str = f" {task.due_time}" if task.due_time else ""
-
-    await message.answer(
-        f"✅ **Vazifa qo'shildi!**\n\n"
-        f"📝 {task.task_text}\n"
-        f"📅 {date_str}{time_str}\n"
-        f"📷 Rasm saqlandi\n"
-        f"🆔 #{task.id}",
-        parse_mode="Markdown",
-    )
-
-
-@router.message(F.video)
-async def handle_video(message: types.Message):
-    """Handle video messages with optional caption."""
-    caption = message.caption or "Video bilan vazifa"
-
-    async with async_session_factory() as session:
-        user = await get_or_create_user(
-            session,
-            telegram_id=message.from_user.id,
-            username=message.from_user.username,
-            first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name,
-            language_code=message.from_user.language_code,
-        )
-
-        # Create task
-        task = await task_service.create_task_from_text(
-            session,
-            user.id,
-            caption,
-            TaskSource.TEXT,
-        )
-
-        # Download and save video
-        try:
-            file_data = await file_service.download_telegram_file(message.bot, message, AttachmentType.VIDEO)
-            attachment = Attachment(task_id=task.id, **file_data)
-            session.add(attachment)
-            await session.commit()
-        except Exception as e:
-            print(f"Error saving video: {e}")
-
-    date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
-    time_str = f" {task.due_time}" if task.due_time else ""
-
-    await message.answer(
-        f"✅ **Vazifa qo'shildi!**\n\n"
-        f"📝 {task.task_text}\n"
-        f"📅 {date_str}{time_str}\n"
-        f"🎬 Video saqlandi\n"
-        f"🆔 #{task.id}",
-        parse_mode="Markdown",
-    )
-
-
-@router.message(F.document)
-async def handle_document(message: types.Message):
-    """Handle document messages with optional caption."""
-    caption = message.caption or "Fayl bilan vazifa"
-
-    async with async_session_factory() as session:
-        user = await get_or_create_user(
-            session,
-            telegram_id=message.from_user.id,
-            username=message.from_user.username,
-            first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name,
-            language_code=message.from_user.language_code,
-        )
-
-        # Create task
-        task = await task_service.create_task_from_text(
-            session,
-            user.id,
-            caption,
-            TaskSource.TEXT,
-        )
-
-        # Download and save document
-        try:
-            file_data = await file_service.download_telegram_file(message.bot, message, AttachmentType.DOCUMENT)
-            attachment = Attachment(task_id=task.id, **file_data)
-            session.add(attachment)
-            await session.commit()
-        except Exception as e:
-            print(f"Error saving document: {e}")
-
-    date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
-    time_str = f" {task.due_time}" if task.due_time else ""
-
-    await message.answer(
-        f"✅ **Vazifa qo'shildi!**\n\n"
-        f"📝 {task.task_text}\n"
-        f"📅 {date_str}{time_str}\n"
-        f"📎 Fayl saqlandi: {message.document.file_name}\n"
-        f"🆔 #{task.id}",
-        parse_mode="Markdown",
-    )
-
-
-@router.message(F.voice)
-async def handle_voice(message: types.Message):
-    """Handle voice messages."""
-    # Download voice file
-    file = await message.bot.get_file(message.voice.file_id)
-    file_path = f"/tmp/voice_{message.voice.file_id}.ogg"
-    await message.bot.download_file(file.file_path, file_path)
-
-    # Transcribe
-    try:
-        text = await speech_service.transcribe_audio(file_path)
-        await message.answer(f"🎤 Eshitdim: _{text}_", parse_mode="Markdown")
-
-        # Create task
-        async with async_session_factory() as session:
-            user = await get_or_create_user(
-                session,
-                telegram_id=message.from_user.id,
-                username=message.from_user.username,
-                first_name=message.from_user.first_name,
-                last_name=message.from_user.last_name,
-                language_code=message.from_user.language_code,
-            )
-
-            task = await task_service.create_task_from_text(
-                session,
-                user.id,
-                text,
-                TaskSource.VOICE,
-            )
-
-            # Save voice attachment
-            try:
-                file_data = await file_service.download_telegram_file(message.bot, message, AttachmentType.VOICE)
-                attachment = Attachment(task_id=task.id, **file_data)
-                session.add(attachment)
-                await session.commit()
-            except Exception as e:
-                print(f"Error saving voice: {e}")
-
-        # Format response
-        date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
-        time_str = f" {task.due_time}" if task.due_time else ""
-
-        await message.answer(
-            f"✅ **Vazifa qo'shildi!**\n\n"
-            f"📝 {task.task_text}\n"
-            f"📅 {date_str}{time_str}\n"
-            f"🎤 Ovoz saqlandi\n"
-            f"🆔 #{task.id}",
-            parse_mode="Markdown",
-        )
-
-    finally:
-        # Cleanup
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-
-@router.message(F.text)
-async def handle_text(message: types.Message):
-    """Handle text messages - create task."""
-    text = message.text
-
-    async with async_session_factory() as session:
-        user = await get_or_create_user(
-            session,
-            telegram_id=message.from_user.id,
-            username=message.from_user.username,
-            first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name,
-            language_code=message.from_user.language_code,
-        )
-
-        task = await task_service.create_task_from_text(
-            session,
-            user.id,
-            text,
-            TaskSource.TEXT,
-        )
-
-    # Format response
-    date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
-    time_str = f" {task.due_time}" if task.due_time else ""
-
-    await message.answer(
-        f"✅ **Vazifa qo'shildi!**\n\n"
-        f"📝 {task.task_text}\n"
-        f"📅 {date_str}{time_str}\n"
-        f"🆔 #{task.id}",
-        parse_mode="Markdown",
-    )
+        await message.answer("❌ Vazifa topilmadi yoki sizga tegishli emas.")
