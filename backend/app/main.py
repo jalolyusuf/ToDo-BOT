@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
 # Create FastAPI app
 app = FastAPI(
     title=settings.app_name,
-    description="Claude AI Assistant Bot with Telegram integration",
+    description="Telegram Task Reminder Bot with AI-powered date extraction",
     version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -57,7 +57,7 @@ app.include_router(api_router, prefix=settings.api_v1_prefix)
 async def root():
     """Root endpoint."""
     return {
-        "message": "Claude AI Assistant Bot API",
+        "message": "Todo Bot - Vazifa Eslatuvchi API",
         "version": "2.0.0",
         "docs": "/docs",
     }
