@@ -6,11 +6,28 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db import get_session
-from app.models import Task, TaskStatus
+from app.models import Attachment, Task, TaskStatus
 
 router = APIRouter()
+
+
+class AttachmentResponse(BaseModel):
+    """Attachment response schema."""
+
+    id: int
+    file_type: str
+    file_name: str
+    file_url: str
+    file_size: int | None
+    mime_type: str | None
+    duration: int | None
+    width: int | None
+    height: int | None
+
+    model_config = {"from_attributes": True}
 
 
 class TaskCreate(BaseModel):
@@ -38,7 +55,10 @@ class TaskResponse(BaseModel):
     due_date: str | None
     due_time: str | None
     status: str
+    source: str
+    original_text: str | None
     created_at: str
+    attachments: list[AttachmentResponse]
 
     model_config = {"from_attributes": True}
 
@@ -50,7 +70,7 @@ async def get_tasks(
     session: AsyncSession = Depends(get_session),
 ):
     """Get all tasks for user."""
-    stmt = select(Task).where(Task.user_id == user_id)
+    stmt = select(Task).where(Task.user_id == user_id).options(selectinload(Task.attachments))
     if status:
         stmt = stmt.where(Task.status == status)
     stmt = stmt.order_by(Task.due_date.asc().nullslast(), Task.created_at.desc())
@@ -65,7 +85,23 @@ async def get_tasks(
             due_date=task.due_date.strftime("%Y-%m-%d") if task.due_date else None,
             due_time=task.due_time,
             status=task.status.value,
+            source=task.source.value,
+            original_text=task.original_text,
             created_at=task.created_at.isoformat(),
+            attachments=[
+                AttachmentResponse(
+                    id=att.id,
+                    file_type=att.file_type.value,
+                    file_name=att.file_name,
+                    file_url=f"/api/v1/files/{att.id}",
+                    file_size=att.file_size,
+                    mime_type=att.mime_type,
+                    duration=att.duration,
+                    width=att.width,
+                    height=att.height,
+                )
+                for att in task.attachments
+            ],
         )
         for task in tasks
     ]
@@ -87,7 +123,7 @@ async def create_task(
     )
     session.add(task)
     await session.commit()
-    await session.refresh(task)
+    await session.refresh(task, ["attachments"])
 
     return TaskResponse(
         id=task.id,
@@ -95,7 +131,10 @@ async def create_task(
         due_date=task.due_date.strftime("%Y-%m-%d") if task.due_date else None,
         due_time=task.due_time,
         status=task.status.value,
+        source=task.source.value,
+        original_text=task.original_text,
         created_at=task.created_at.isoformat(),
+        attachments=[],
     )
 
 
@@ -107,7 +146,7 @@ async def update_task(
     session: AsyncSession = Depends(get_session),
 ):
     """Update task."""
-    stmt = select(Task).where(Task.id == task_id, Task.user_id == user_id)
+    stmt = select(Task).where(Task.id == task_id, Task.user_id == user_id).options(selectinload(Task.attachments))
     result = await session.execute(stmt)
     task = result.scalar_one_or_none()
 
@@ -126,7 +165,7 @@ async def update_task(
             task.completed_at = datetime.now()
 
     await session.commit()
-    await session.refresh(task)
+    await session.refresh(task, ["attachments"])
 
     return TaskResponse(
         id=task.id,
@@ -134,7 +173,23 @@ async def update_task(
         due_date=task.due_date.strftime("%Y-%m-%d") if task.due_date else None,
         due_time=task.due_time,
         status=task.status.value,
+        source=task.source.value,
+        original_text=task.original_text,
         created_at=task.created_at.isoformat(),
+        attachments=[
+            AttachmentResponse(
+                id=att.id,
+                file_type=att.file_type.value,
+                file_name=att.file_name,
+                file_url=f"/api/v1/files/{att.id}",
+                file_size=att.file_size,
+                mime_type=att.mime_type,
+                duration=att.duration,
+                width=att.width,
+                height=att.height,
+            )
+            for att in task.attachments
+        ],
     )
 
 

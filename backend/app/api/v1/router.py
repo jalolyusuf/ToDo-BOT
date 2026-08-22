@@ -2,13 +2,14 @@
 
 from fastapi import APIRouter
 
-from app.api.v1.routes import tasks, telegram
+from app.api.v1.routes import files, tasks, telegram
 
 api_router = APIRouter()
 
 # Include route modules
 api_router.include_router(telegram.router, tags=["telegram"])
 api_router.include_router(tasks.router, tags=["tasks"])
+api_router.include_router(files.router, tags=["files"])
 
 
 @api_router.get("/health")

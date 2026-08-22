@@ -61,6 +61,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+      - storage_data:/app/storage
     restart: unless-stopped
 
   # Frontend Web UI
@@ -77,6 +78,7 @@ services:
 
 volumes:
   postgres_data:
+  storage_data:
 
 networks:
   default:

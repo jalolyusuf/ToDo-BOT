@@ -7,7 +7,8 @@ from aiogram import F, Router, types
 from aiogram.filters import Command
 
 from app.db import async_session_factory
-from app.models import TaskSource, TaskStatus
+from app.models import Attachment, AttachmentType, TaskSource, TaskStatus
+from app.services.file_service import file_service
 from app.services.speech_service import speech_service
 from app.services.task_service import task_service
 from app.services.user_service import get_or_create_user
@@ -132,8 +133,143 @@ async def cmd_delete(message: types.Message):
         await message.answer("❌ Vazifa topilmadi")
 
 
+@router.message(F.photo)
+async def handle_photo(message: types.Message):
+    """Handle photo messages with optional caption."""
+    caption = message.caption or "Rasm bilan vazifa"
+
+    async with async_session_factory() as session:
+        user = await get_or_create_user(
+            session,
+            telegram_id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
+            language_code=message.from_user.language_code,
+        )
+
+        # Create task
+        task = await task_service.create_task_from_text(
+            session,
+            user.id,
+            caption,
+            TaskSource.TEXT,
+        )
+
+        # Download and save photo
+        try:
+            file_data = await file_service.download_telegram_file(message.bot, message, AttachmentType.PHOTO)
+            attachment = Attachment(task_id=task.id, **file_data)
+            session.add(attachment)
+            await session.commit()
+        except Exception as e:
+            print(f"Error saving photo: {e}")
+
+    date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
+    time_str = f" {task.due_time}" if task.due_time else ""
+
+    await message.answer(
+        f"✅ **Vazifa qo'shildi!**\n\n"
+        f"📝 {task.task_text}\n"
+        f"📅 {date_str}{time_str}\n"
+        f"📷 Rasm saqlandi\n"
+        f"🆔 #{task.id}",
+        parse_mode="Markdown",
+    )
+
+
+@router.message(F.video)
+async def handle_video(message: types.Message):
+    """Handle video messages with optional caption."""
+    caption = message.caption or "Video bilan vazifa"
+
+    async with async_session_factory() as session:
+        user = await get_or_create_user(
+            session,
+            telegram_id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
+            language_code=message.from_user.language_code,
+        )
+
+        # Create task
+        task = await task_service.create_task_from_text(
+            session,
+            user.id,
+            caption,
+            TaskSource.TEXT,
+        )
+
+        # Download and save video
+        try:
+            file_data = await file_service.download_telegram_file(message.bot, message, AttachmentType.VIDEO)
+            attachment = Attachment(task_id=task.id, **file_data)
+            session.add(attachment)
+            await session.commit()
+        except Exception as e:
+            print(f"Error saving video: {e}")
+
+    date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
+    time_str = f" {task.due_time}" if task.due_time else ""
+
+    await message.answer(
+        f"✅ **Vazifa qo'shildi!**\n\n"
+        f"📝 {task.task_text}\n"
+        f"📅 {date_str}{time_str}\n"
+        f"🎬 Video saqlandi\n"
+        f"🆔 #{task.id}",
+        parse_mode="Markdown",
+    )
+
+
+@router.message(F.document)
+async def handle_document(message: types.Message):
+    """Handle document messages with optional caption."""
+    caption = message.caption or "Fayl bilan vazifa"
+
+    async with async_session_factory() as session:
+        user = await get_or_create_user(
+            session,
+            telegram_id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
+            language_code=message.from_user.language_code,
+        )
+
+        # Create task
+        task = await task_service.create_task_from_text(
+            session,
+            user.id,
+            caption,
+            TaskSource.TEXT,
+        )
+
+        # Download and save document
+        try:
+            file_data = await file_service.download_telegram_file(message.bot, message, AttachmentType.DOCUMENT)
+            attachment = Attachment(task_id=task.id, **file_data)
+            session.add(attachment)
+            await session.commit()
+        except Exception as e:
+            print(f"Error saving document: {e}")
+
+    date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
+    time_str = f" {task.due_time}" if task.due_time else ""
+
+    await message.answer(
+        f"✅ **Vazifa qo'shildi!**\n\n"
+        f"📝 {task.task_text}\n"
+        f"📅 {date_str}{time_str}\n"
+        f"📎 Fayl saqlandi: {message.document.file_name}\n"
+        f"🆔 #{task.id}",
+        parse_mode="Markdown",
+    )
+
+
 @router.message(F.voice)
-async def handle_voice(message: types.Voice):
+async def handle_voice(message: types.Message):
     """Handle voice messages."""
     # Download voice file
     file = await message.bot.get_file(message.voice.file_id)
@@ -163,12 +299,24 @@ async def handle_voice(message: types.Voice):
                 TaskSource.VOICE,
             )
 
+            # Save voice attachment
+            try:
+                file_data = await file_service.download_telegram_file(message.bot, message, AttachmentType.VOICE)
+                attachment = Attachment(task_id=task.id, **file_data)
+                session.add(attachment)
+                await session.commit()
+            except Exception as e:
+                print(f"Error saving voice: {e}")
+
         # Format response
         date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
+        time_str = f" {task.due_time}" if task.due_time else ""
+
         await message.answer(
             f"✅ **Vazifa qo'shildi!**\n\n"
             f"📝 {task.task_text}\n"
-            f"📅 {date_str}\n"
+            f"📅 {date_str}{time_str}\n"
+            f"🎤 Ovoz saqlandi\n"
             f"🆔 #{task.id}",
             parse_mode="Markdown",
         )

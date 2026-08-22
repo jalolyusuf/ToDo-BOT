@@ -65,6 +65,9 @@ class Task(Base):
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Relationships
+    attachments: Mapped[list["Attachment"]] = relationship("Attachment", back_populates="task", cascade="all, delete-orphan")
+
     def __repr__(self) -> str:
         """String representation."""
         return f"<Task(id={self.id}, user_id={self.user_id}, task='{self.task_text[:30]}...', status={self.status})>"
