@@ -1,9 +1,12 @@
 """Media playback API - Send video/audio via Telegram bot."""
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_current_user_id
 from app.db import get_session
 from app.models import Attachment, User
 from app.telegram.bot import create_bot
@@ -14,8 +17,8 @@ router = APIRouter()
 @router.post("/media/{attachment_id}/play")
 async def play_media(
     attachment_id: int,
-    user_id: str = "temp-user",  # TODO: Get from auth
     session: AsyncSession = Depends(get_session),
+    user_id: UUID = Depends(get_current_user_id),
 ):
     """
     Send video/audio to user via Telegram bot.

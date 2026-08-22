@@ -187,7 +187,17 @@ export default function TasksPage() {
 
   const fetchTasks = async () => {
     try {
-      const response = await fetch('/api/v1/tasks')
+      const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+      if (!telegramUserId) {
+        console.error('Telegram user ID not found')
+        return
+      }
+
+      const response = await fetch('/api/v1/tasks', {
+        headers: {
+          'X-Telegram-User-ID': telegramUserId.toString()
+        }
+      })
       const data = await response.json()
       setAllTasks(data)
     } catch (error) {
@@ -212,9 +222,18 @@ export default function TasksPage() {
     if (!newTask.trim()) return
     setLoading(true)
     try {
+      const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+      if (!telegramUserId) {
+        console.error('Telegram user ID not found')
+        return
+      }
+
       const response = await fetch('/api/v1/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Telegram-User-ID': telegramUserId.toString()
+        },
         body: JSON.stringify({ task_text: newTask }),
       })
       if (response.ok) {
@@ -230,7 +249,15 @@ export default function TasksPage() {
 
   const deleteTask = async (id: number) => {
     try {
-      const response = await fetch(`/api/v1/tasks/${id}`, { method: 'DELETE' })
+      const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+      if (!telegramUserId) return
+
+      const response = await fetch(`/api/v1/tasks/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'X-Telegram-User-ID': telegramUserId.toString()
+        }
+      })
       if (response.ok) await fetchTasks()
     } catch (error) {
       console.error('Failed to delete task:', error)
@@ -239,9 +266,15 @@ export default function TasksPage() {
 
   const markDone = async (id: number) => {
     try {
+      const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+      if (!telegramUserId) return
+
       const response = await fetch(`/api/v1/tasks/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Telegram-User-ID': telegramUserId.toString()
+        },
         body: JSON.stringify({ status: 'done' }),
       })
       if (response.ok) await fetchTasks()
@@ -252,8 +285,17 @@ export default function TasksPage() {
 
   const playMedia = async (attachmentId: number) => {
     try {
+      const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id
+      if (!telegramUserId) {
+        alert('❌ Telegram user ID topilmadi')
+        return
+      }
+
       const response = await fetch(`/api/v1/media/${attachmentId}/play`, {
         method: 'POST',
+        headers: {
+          'X-Telegram-User-ID': telegramUserId.toString()
+        }
       })
       if (response.ok) {
         alert('📱 Media Telegram botga yuborildi! Telegram da ko\'ring.')

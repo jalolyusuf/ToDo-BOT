@@ -1,7 +1,7 @@
 """Reminder service for sending scheduled notifications."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from sqlalchemy import select
@@ -29,7 +29,7 @@ class ReminderService:
         try:
             async with async_session_factory() as session:
                 # Get tasks that need reminders
-                now = datetime.now()
+                now = datetime.now(timezone.utc)
 
                 # Find tasks where:
                 # 1. Status is PENDING
@@ -151,7 +151,7 @@ class ReminderService:
 
             # Mark reminder as sent
             task.reminder_sent = True
-            task.reminder_sent_at = datetime.now()
+            task.reminder_sent_at = datetime.now(timezone.utc)
             await session.commit()
 
             logger.info(f"Reminder sent for task {task.id}")

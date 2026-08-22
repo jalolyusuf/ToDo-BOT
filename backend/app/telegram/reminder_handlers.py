@@ -1,6 +1,6 @@
 """Reminder callback handlers for interactive buttons."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from aiogram import F, Router, types
 
@@ -69,10 +69,10 @@ async def callback_reminder_snooze(callback: types.CallbackQuery):
 
         # Calculate new due date
         if duration == "1h":
-            new_due = datetime.now() + timedelta(hours=1)
+            new_due = datetime.now(timezone.utc) + timedelta(hours=1)
             duration_text = "1 soat"
         elif duration == "1d":
-            new_due = datetime.now() + timedelta(days=1)
+            new_due = datetime.now(timezone.utc) + timedelta(days=1)
             duration_text = "1 kun"
         else:
             await callback.answer("❌ Xato", show_alert=True)

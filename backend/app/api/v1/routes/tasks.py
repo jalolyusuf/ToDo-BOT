@@ -1,6 +1,7 @@
 """Task management API endpoints."""
 
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -8,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.api.dependencies import get_current_user_id
 from app.db import get_session
 from app.models import Attachment, Task, TaskStatus
 
@@ -66,8 +68,8 @@ class TaskResponse(BaseModel):
 @router.get("/tasks", response_model=list[TaskResponse])
 async def get_tasks(
     status: TaskStatus | None = None,
-    user_id: str = "temp-user",  # TODO: Get from auth
     session: AsyncSession = Depends(get_session),
+    user_id: UUID = Depends(get_current_user_id),
 ):
     """Get all tasks for user."""
     stmt = select(Task).where(Task.user_id == user_id).options(selectinload(Task.attachments))
@@ -110,8 +112,8 @@ async def get_tasks(
 @router.post("/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 async def create_task(
     task_data: TaskCreate,
-    user_id: str = "temp-user",  # TODO: Get from auth
     session: AsyncSession = Depends(get_session),
+    user_id: UUID = Depends(get_current_user_id),
 ):
     """Create new task."""
     task = Task(
@@ -142,8 +144,8 @@ async def create_task(
 async def update_task(
     task_id: int,
     task_data: TaskUpdate,
-    user_id: str = "temp-user",  # TODO: Get from auth
     session: AsyncSession = Depends(get_session),
+    user_id: UUID = Depends(get_current_user_id),
 ):
     """Update task."""
     stmt = select(Task).where(Task.id == task_id, Task.user_id == user_id).options(selectinload(Task.attachments))
@@ -162,7 +164,7 @@ async def update_task(
     if task_data.status is not None:
         task.status = task_data.status
         if task_data.status == TaskStatus.DONE:
-            task.completed_at = datetime.now()
+            task.completed_at = datetime.now(timezone.utc)
 
     await session.commit()
     await session.refresh(task, ["attachments"])
@@ -196,8 +198,8 @@ async def update_task(
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
     task_id: int,
-    user_id: str = "temp-user",  # TODO: Get from auth
     session: AsyncSession = Depends(get_session),
+    user_id: UUID = Depends(get_current_user_id),
 ):
     """Delete task."""
     stmt = select(Task).where(Task.id == task_id, Task.user_id == user_id)
