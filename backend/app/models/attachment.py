@@ -30,8 +30,8 @@ class Attachment(Base):
     # File details
     file_type: Mapped[AttachmentType] = mapped_column(String(20), nullable=False)
     file_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
-    file_size: Mapped[int] = mapped_column(BigInteger, nullable=True)  # bytes
+    file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)  # None for Telegram-stored files
+    file_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # bytes
     mime_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # Telegram specific

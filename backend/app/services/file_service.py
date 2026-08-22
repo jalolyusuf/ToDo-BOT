@@ -88,15 +88,23 @@ class FileService:
         if not file_id:
             raise ValueError(f"Could not extract file_id for type {file_type}")
 
-        # Download file
-        file = await bot.get_file(file_id)
-        file_path = STORAGE_DIR / file_name
-        await bot.download_file(file.file_path, file_path)
+        # For video and audio - DON'T download, use Telegram storage
+        # Only download photos for thumbnails
+        file_path_str = None
+        if file_type == AttachmentType.PHOTO:
+            # Download photo for web display
+            file = await bot.get_file(file_id)
+            file_path = STORAGE_DIR / file_name
+            await bot.download_file(file.file_path, file_path)
+            file_path_str = str(file_path)
+        else:
+            # Video/Voice/Audio/Document - keep on Telegram, don't download
+            file_path_str = None  # Will use telegram_file_id to retrieve
 
         return {
             "file_type": file_type,
             "file_name": file_name,
-            "file_path": str(file_path),
+            "file_path": file_path_str,  # None for video/audio (use Telegram storage)
             "file_size": file_size,
             "mime_type": mime_type,
             "telegram_file_id": file_id,

@@ -250,9 +250,26 @@ export default function TasksPage() {
     }
   }
 
+  const playMedia = async (attachmentId: number) => {
+    try {
+      const response = await fetch(`/api/v1/media/${attachmentId}/play`, {
+        method: 'POST',
+      })
+      if (response.ok) {
+        alert('📱 Media Telegram botga yuborildi! Telegram da ko\'ring.')
+      } else {
+        alert('❌ Xatolik yuz berdi')
+      }
+    } catch (error) {
+      console.error('Failed to play media:', error)
+      alert('❌ Xatolik yuz berdi')
+    }
+  }
+
   const renderAttachment = (attachment: Attachment) => {
     const baseUrl = window.location.origin
 
+    // Photo - show directly
     if (attachment.file_type === 'photo') {
       return (
         <img
@@ -265,22 +282,58 @@ export default function TasksPage() {
       )
     }
 
+    // Voice/Audio - Play button (sends via Telegram bot)
     if (attachment.file_type === 'voice' || attachment.file_type === 'audio') {
       return (
-        <audio key={attachment.id} controls className="w-full mt-3">
-          <source src={`${baseUrl}${attachment.file_url}`} type={attachment.mime_type || 'audio/ogg'} />
-        </audio>
+        <button
+          key={attachment.id}
+          onClick={() => playMedia(attachment.id)}
+          className="inline-flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-purple-600/20 to-purple-700/20 border border-purple-500/30 rounded-xl hover:from-purple-600/30 hover:to-purple-700/30 transition mt-3"
+        >
+          <svg className="w-6 h-6 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="text-left">
+            <div className="text-sm font-medium text-purple-200">
+              {attachment.file_type === 'voice' ? 'Ovozli xabar' : 'Audio'}
+            </div>
+            {attachment.duration && (
+              <div className="text-xs text-purple-400">
+                {Math.floor(attachment.duration / 60)}:{(attachment.duration % 60).toString().padStart(2, '0')}
+              </div>
+            )}
+          </div>
+        </button>
       )
     }
 
+    // Video - Play button (sends via Telegram bot)
     if (attachment.file_type === 'video') {
       return (
-        <video key={attachment.id} controls className="w-full rounded-xl mt-3">
-          <source src={`${baseUrl}${attachment.file_url}`} type={attachment.mime_type || 'video/mp4'} />
-        </video>
+        <button
+          key={attachment.id}
+          onClick={() => playMedia(attachment.id)}
+          className="relative inline-flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-600/20 to-blue-700/20 border border-blue-500/30 rounded-xl hover:from-blue-600/30 hover:to-blue-700/30 transition mt-3 w-full"
+        >
+          <svg className="w-8 h-8 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="text-left flex-1">
+            <div className="text-sm font-medium text-blue-200">Video</div>
+            <div className="text-xs text-blue-400">{attachment.file_name}</div>
+            {attachment.duration && (
+              <div className="text-xs text-blue-400 mt-1">
+                ⏱️ {Math.floor(attachment.duration / 60)}:{(attachment.duration % 60).toString().padStart(2, '0')}
+              </div>
+            )}
+          </div>
+        </button>
       )
     }
 
+    // Document - Download link
     if (attachment.file_type === 'document') {
       return (
         <a
