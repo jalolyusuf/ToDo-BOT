@@ -1,9 +1,13 @@
 """Services package."""
 
-from app.services.ai_service import ai_service
-from app.services.bedrock_client import bedrock_client
+from app.services.claude_client import claude_client
+from app.services.speech_service import speech_service
+from app.services.task_service import task_service
+from app.services.user_service import get_or_create_user
 
 __all__ = [
-    "bedrock_client",
-    "ai_service",
+    "claude_client",
+    "speech_service",
+    "task_service",
+    "get_or_create_user",
 ]
