@@ -8,6 +8,10 @@ from app.telegram.bot import create_bot, create_dispatcher
 router = APIRouter()
 settings = get_settings()
 
+# Create bot and dispatcher once at module load
+bot = create_bot()
+dispatcher = create_dispatcher()
+
 
 @router.post("/telegram/webhook")
 async def telegram_webhook(
@@ -26,8 +30,6 @@ async def telegram_webhook(
 
     # Process update
     body = await request.json()
-    bot = create_bot()
-    dispatcher = create_dispatcher()
 
     try:
         await dispatcher.feed_raw_update(bot, body)
