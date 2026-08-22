@@ -1,6 +1,7 @@
 """Main FastAPI application."""
 
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -14,6 +15,13 @@ from app.db.base import Base
 from app.services.reminder_service import reminder_service
 from app.services.telegram_menu_service import set_bot_commands, setup_mini_app_button
 from app.telegram.bot import create_bot
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -41,7 +49,7 @@ async def lifespan(app: FastAPI):
         await set_bot_commands(bot)
         await bot.session.close()
     except Exception as e:
-        print(f"Warning: Could not setup Telegram menu: {e}")
+        logger.warning(f"Could not setup Telegram menu: {e}")
 
     # Start reminder scheduler
     try:
@@ -57,16 +65,25 @@ async def lifespan(app: FastAPI):
         )
 
         scheduler.start()
-        print("✅ Reminder scheduler started (checking every 1 minute)")
+        logger.info("✅ Reminder scheduler started (checking every 1 minute)")
+        logger.info(f"📋 Scheduled jobs: {scheduler.get_jobs()}")
+
+        # Run immediately once on startup for testing
+        logger.info("🔄 Running reminder check immediately on startup...")
+        await reminder_service.check_and_send_reminders()
+        logger.info("✅ Initial reminder check completed")
+
     except Exception as e:
-        print(f"Warning: Could not start scheduler: {e}")
+        logger.error(f"❌ Could not start scheduler: {e}")
+        import traceback
+        traceback.print_exc()
 
     yield
 
     # Shutdown
     if scheduler:
         scheduler.shutdown()
-        print("Reminder scheduler stopped")
+        logger.info("Reminder scheduler stopped")
 
     await engine.dispose()
 
