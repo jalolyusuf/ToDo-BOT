@@ -1,7 +1,7 @@
 """Claude AI client for task parsing."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from anthropic import Anthropic
@@ -31,30 +31,39 @@ class ClaudeClient:
             dict with keys: task, date (YYYY-MM-DD or null), time (HH:MM or null)
         """
         if not current_date:
-            current_date = datetime.now().strftime("%Y-%m-%d")
+            now = datetime.now()
+            current_date = now.strftime("%Y-%m-%d")
+        else:
+            now = datetime.strptime(current_date, "%Y-%m-%d")
+
+        tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+        current_year = now.year
 
         prompt = f"""Sen vazifa va sanani ajratuvchi yordamchisan. Foydalanuvchi xabaridan quyidagilarni JSON formatida qaytar:
 
-- **task**: vazifaning qisqa tavsifi (o'zbek yoki rus tilida)
-- **date**: agar sana ko'rsatilgan bo'lsa, YYYY-MM-DD formatida (bugungi sana: {current_date})
-- **time**: agar vaqt ko'rsatilgan bo'lsa, HH:MM formatida, aks holda null
+- **task**: vazifaning qisqa tavsifi (faqat vazifa matni, sana/vaqt so'zlarisiz)
+- **date**: agar sana ko'rsatilgan bo'lsa, YYYY-MM-DD formatida
+- **time**: agar vaqt ko'rsatilgan bo'lsa, HH:MM formatida
 
-**Sana qoidalari:**
+**MUHIM SANA QOIDALARI (Bugungi sana: {current_date}, Yil: {current_year}):**
 - "bugun" → {current_date}
-- "ertaga" → keyingi kun
-- "3-sentabrda" yoki "3 sentabr" → 2026-09-03
-- "dushanba", "seshanba" → haftaning kunidan hisoblash
+- "ertaga" → {tomorrow}
+- "3-sentabrda" yoki "3 sentabr" → {current_year}-09-03
+- "15-avgustda" → {current_year}-08-15
+- "20-iyunda" → {current_year}-06-20
+- "dushanba", "seshanba", "chorshanba", "payshanba", "juma", "shanba", "yakshanba" → haftaning keyingi kunini hisoblang
 - Agar sana yo'q bo'lsa → null
 
-**Vaqt qoidalari:**
-- "soat 15:00 da" → 15:00
-- "ertalab 9 da" → 09:00
-- "kechqurun" → 18:00
+**VAQT QOIDALARI:**
+- "soat 15:00 da" yoki "15:00 da" → "15:00"
+- "ertalab 9 da" yoki "ertalab soat 9" → "09:00"
+- "kechqurun 6 da" → "18:00"
+- "tushlik vaqti" → "13:00"
 - Agar vaqt yo'q bo'lsa → null
 
 **Foydalanuvchi xabari:** "{user_message}"
 
-Faqat JSON qaytar, boshqa hech narsa yozma. Format:
+FAQAT JSON qaytar, boshqa matn yoki tushuntirish YOZMA. Format:
 {{"task": "...", "date": "YYYY-MM-DD yoki null", "time": "HH:MM yoki null"}}"""
 
         try:
