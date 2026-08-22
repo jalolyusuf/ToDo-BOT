@@ -107,6 +107,54 @@ const LockIcon = () => (
   </svg>
 )
 
+const TasksIcon = () => (
+  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+  </svg>
+)
+
+const PendingIcon = () => (
+  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
+
+const DoneIcon = () => (
+  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+)
+
+const AttachmentIcon = () => (
+  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+  </svg>
+)
+
+const EmptyIcon = () => (
+  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+  </svg>
+)
+
+const TextIcon = () => (
+  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+  </svg>
+)
+
+const VoiceIcon = () => (
+  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+  </svg>
+)
+
+const WebIcon = () => (
+  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+  </svg>
+)
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [allTasks, setAllTasks] = useState<Task[]>([])
@@ -259,14 +307,14 @@ export default function TasksPage() {
 
   const getSourceBadge = (source: string) => {
     const badges = {
-      text: { icon: '💬', label: 'Matn', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
-      voice: { icon: '🎤', label: 'Ovoz', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
-      web: { icon: '🌐', label: 'Web', color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' },
+      text: { icon: <TextIcon />, label: 'Matn', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+      voice: { icon: <VoiceIcon />, label: 'Ovoz', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+      web: { icon: <WebIcon />, label: 'Web', color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' },
     }
     const badge = badges[source as keyof typeof badges] || badges.text
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border ${badge.color}`}>
-        <span>{badge.icon}</span>
+      <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border ${badge.color}`}>
+        {badge.icon}
         <span>{badge.label}</span>
       </span>
     )
@@ -361,22 +409,30 @@ export default function TasksPage() {
         {viewMode === 'stats' && (
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="bg-gradient-to-br from-blue-600/20 to-blue-700/20 backdrop-blur-sm rounded-xl p-4 border border-blue-500/20">
-              <div className="text-3xl mb-2">📊</div>
+              <div className="mb-2 text-blue-300">
+                <TasksIcon />
+              </div>
               <div className="text-2xl font-bold">{stats.total}</div>
               <div className="text-xs text-blue-200">Jami vazifalar</div>
             </div>
             <div className="bg-gradient-to-br from-yellow-600/20 to-yellow-700/20 backdrop-blur-sm rounded-xl p-4 border border-yellow-500/20">
-              <div className="text-3xl mb-2">⏳</div>
+              <div className="mb-2 text-yellow-300">
+                <PendingIcon />
+              </div>
               <div className="text-2xl font-bold text-yellow-300">{stats.pending}</div>
               <div className="text-xs text-yellow-200">Bajarilmagan</div>
             </div>
             <div className="bg-gradient-to-br from-green-600/20 to-green-700/20 backdrop-blur-sm rounded-xl p-4 border border-green-500/20">
-              <div className="text-3xl mb-2">✓</div>
+              <div className="mb-2 text-green-300">
+                <DoneIcon />
+              </div>
               <div className="text-2xl font-bold text-green-300">{stats.done}</div>
               <div className="text-xs text-green-200">Bajarilgan</div>
             </div>
             <div className="bg-gradient-to-br from-purple-600/20 to-purple-700/20 backdrop-blur-sm rounded-xl p-4 border border-purple-500/20">
-              <div className="text-3xl mb-2">📎</div>
+              <div className="mb-2 text-purple-300">
+                <AttachmentIcon />
+              </div>
               <div className="text-2xl font-bold text-purple-300">{stats.withMedia}</div>
               <div className="text-xs text-purple-200">Media fayl</div>
             </div>
@@ -457,7 +513,9 @@ export default function TasksPage() {
         <div className="space-y-3">
           {tasks.length === 0 ? (
             <div className="text-center py-12 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/50">
-              <div className="text-6xl mb-4 opacity-50">📭</div>
+              <div className="mb-4 text-gray-600 flex justify-center">
+                <EmptyIcon />
+              </div>
               <p className="text-gray-400">
                 {searchQuery || filterStatus !== 'pending'
                   ? 'Hech narsa topilmadi'
