@@ -46,6 +46,8 @@ class ReminderService:
                 result = await session.execute(stmt)
                 tasks = result.scalars().all()
 
+                logger.info(f"Found {len(tasks)} pending tasks with due_date and reminder_sent=False")
+
                 sent_count = 0
                 for task in tasks:
                     # Check if reminder time has arrived
@@ -53,7 +55,7 @@ class ReminderService:
                         await ReminderService._send_reminder(session, task)
                         sent_count += 1
 
-                logger.info(f"Sent {sent_count} reminders")
+                logger.info(f"Sent {sent_count} reminders out of {len(tasks)} candidates")
 
         except Exception as e:
             logger.error(f"Error checking reminders: {e}")
@@ -74,11 +76,14 @@ class ReminderService:
                 hour = int(time_parts[0])
                 minute = int(time_parts[1]) if len(time_parts) > 1 else 0
 
-                due_datetime = due_datetime.replace(hour=hour, minute=minute, second=0)
-            except Exception:
-                pass
+                due_datetime = due_datetime.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            except Exception as e:
+                logger.warning(f"Failed to parse due_time for task {task.id}: {e}")
 
-        # Send reminder if due time has arrived (within 1 minute tolerance)
+        # Debug logging
+        logger.info(f"Task {task.id}: due={due_datetime}, now={now}, should_send={due_datetime <= now}")
+
+        # Send reminder if due time has arrived
         return due_datetime <= now
 
     @staticmethod
