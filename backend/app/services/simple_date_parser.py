@@ -54,6 +54,29 @@ class SimpleDateParser:
 
         # DATE PATTERNS
 
+        # "dd:mm:yyyy hh:mm:ss" - EXACT FORMAT (PRIMARY)
+        exact_match = re.search(r'(\d{1,2}):(\d{1,2}):(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})', text)
+        if exact_match:
+            day, month, year, hour, minute, second = exact_match.groups()
+            result["date"] = f"{year}-{int(month):02d}-{int(day):02d}"
+            result["time"] = f"{int(hour):02d}:{int(minute):02d}"
+            return result
+
+        # "dd:mm:yyyy hh:mm" - WITHOUT SECONDS
+        exact_match = re.search(r'(\d{1,2}):(\d{1,2}):(\d{4})\s+(\d{1,2}):(\d{2})', text)
+        if exact_match:
+            day, month, year, hour, minute = exact_match.groups()
+            result["date"] = f"{year}-{int(month):02d}-{int(day):02d}"
+            result["time"] = f"{int(hour):02d}:{int(minute):02d}"
+            return result
+
+        # "dd:mm:yyyy" - DATE ONLY
+        exact_match = re.search(r'(\d{1,2}):(\d{1,2}):(\d{4})(?!\s*\d)', text)
+        if exact_match:
+            day, month, year = exact_match.groups()
+            result["date"] = f"{year}-{int(month):02d}-{int(day):02d}"
+            return result
+
         # "bugun"
         if "bugun" in text:
             result["date"] = current_date.strftime("%Y-%m-%d")
