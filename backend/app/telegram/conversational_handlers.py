@@ -143,10 +143,12 @@ async def handle_text_stateful(message: types.Message):
 
         # If waiting for date - parse and create task
         if user_session.state == SessionState.WAITING_FOR_DATE:
-            from app.services.claude_client import claude_client
+            from datetime import datetime
+            from app.services.simple_date_parser import simple_date_parser
 
-            # Parse date with Claude
-            parsed = await claude_client.parse_task(message.text)
+            # Parse date with simple parser (NO AI!)
+            current_dt = datetime.now()
+            parsed = simple_date_parser.parse(message.text, current_dt)
 
             task_data = await session_service.get_task_data(session, user.id)
 
