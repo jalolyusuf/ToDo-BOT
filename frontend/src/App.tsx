@@ -1,11 +1,11 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import ChatPage from './pages/ChatPage'
+import TasksPage from './pages/TasksPage'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<ChatPage />} />
+        <Route path="/" element={<TasksPage />} />
       </Routes>
     </BrowserRouter>
   )
