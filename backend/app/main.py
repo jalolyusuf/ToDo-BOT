@@ -9,6 +9,8 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.db import engine
 from app.db.base import Base
+from app.services.telegram_menu_service import set_bot_commands, setup_mini_app_button
+from app.telegram.bot import create_bot
 
 settings = get_settings()
 
@@ -23,6 +25,15 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
+
+    # Setup Telegram Mini App button
+    try:
+        bot = create_bot()
+        await setup_mini_app_button(bot)
+        await set_bot_commands(bot)
+        await bot.session.close()
+    except Exception as e:
+        print(f"Warning: Could not setup Telegram menu: {e}")
 
     yield
 

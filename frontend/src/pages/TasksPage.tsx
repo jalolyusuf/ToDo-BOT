@@ -1,5 +1,31 @@
 import { useEffect, useState } from 'react'
 
+// Telegram WebApp types
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: {
+        initData: string
+        initDataUnsafe: {
+          user?: {
+            id: number
+            first_name: string
+            last_name?: string
+            username?: string
+          }
+        }
+        ready: () => void
+        expand: () => void
+        MainButton: {
+          setText: (text: string) => void
+          show: () => void
+          hide: () => void
+        }
+      }
+    }
+  }
+}
+
 interface Attachment {
   id: number
   file_type: string
@@ -24,7 +50,7 @@ interface Task {
   attachments: Attachment[]
 }
 
-type ViewMode = 'list' | 'calendar' | 'stats'
+type ViewMode = 'list' | 'stats'
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -34,13 +60,28 @@ export default function TasksPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'done'>('pending')
+  const [isTelegram, setIsTelegram] = useState(false)
+  const [telegramUser, setTelegramUser] = useState<any>(null)
 
   useEffect(() => {
-    fetchTasks()
+    // Check if opened in Telegram
+    const tg = window.Telegram?.WebApp
+    if (tg && tg.initData) {
+      setIsTelegram(true)
+      setTelegramUser(tg.initDataUnsafe.user)
+      tg.ready()
+      tg.expand()
+      fetchTasks()
+    } else {
+      // Block browser access
+      setIsTelegram(false)
+    }
   }, [])
 
   useEffect(() => {
-    filterTasks()
+    if (isTelegram) {
+      filterTasks()
+    }
   }, [searchQuery, filterStatus, allTasks])
 
   const fetchTasks = async () => {
@@ -135,7 +176,7 @@ export default function TasksPage() {
       return (
         <audio key={attachment.id} controls className="w-full max-w-sm mt-2">
           <source src={`${baseUrl}${attachment.file_url}`} type={attachment.mime_type || 'audio/ogg'} />
-          Browser audio qo'llab-quvvatlamaydi
+          Audio
         </audio>
       )
     }
@@ -144,7 +185,7 @@ export default function TasksPage() {
       return (
         <video key={attachment.id} controls className="w-full max-w-md rounded-lg mt-2">
           <source src={`${baseUrl}${attachment.file_url}`} type={attachment.mime_type || 'video/mp4'} />
-          Browser video qo'llab-quvvatlamaydi
+          Video
         </video>
       )
     }
@@ -155,12 +196,12 @@ export default function TasksPage() {
           key={attachment.id}
           href={`${baseUrl}${attachment.file_url}`}
           download={attachment.file_name}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 mt-2"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 mt-2"
         >
           <span>📎</span>
           <span className="text-sm">{attachment.file_name}</span>
           {attachment.file_size && (
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-400">
               ({(attachment.file_size / 1024).toFixed(0)} KB)
             </span>
           )}
@@ -187,38 +228,65 @@ export default function TasksPage() {
     withMedia: allTasks.filter(t => t.attachments.length > 0).length,
   }
 
+  // Block non-Telegram access
+  if (!isTelegram) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="text-8xl mb-6">🔒</div>
+          <h1 className="text-3xl font-bold text-white mb-4">
+            Kirish taqiqlangan
+          </h1>
+          <p className="text-gray-400 mb-6">
+            Bu sahifaga faqat Telegram bot orqali kirish mumkin
+          </p>
+          <a
+            href="https://t.me/td_ls_bot"
+            className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+          >
+            🤖 Botni ochish
+          </a>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-900 text-white pb-4">
+      <div className="max-w-2xl mx-auto px-3 py-3">
         {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="bg-gray-800 rounded-xl shadow-lg p-4 mb-3">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-gray-800 mb-2">
-                🎯 Vazifa Eslatuvchi
+              <h1 className="text-2xl font-bold mb-1">
+                🎯 Vazifalar
               </h1>
-              <p className="text-gray-600">Web Dashboard - Barcha vazifalaringiz bir joyda</p>
+              {telegramUser && (
+                <p className="text-sm text-gray-400">
+                  Salom, {telegramUser.first_name}!
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-4 py-2 rounded-lg font-medium ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
                   viewMode === 'list'
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-gray-700 text-gray-300'
                 }`}
               >
-                📋 Ro'yxat
+                📋
               </button>
               <button
                 onClick={() => setViewMode('stats')}
-                className={`px-4 py-2 rounded-lg font-medium ${
+                className={`px-3 py-2 rounded-lg text-sm font-medium ${
                   viewMode === 'stats'
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-gray-700 text-gray-300'
                 }`}
               >
-                📊 Statistika
+                📊
               </button>
             </div>
           </div>
@@ -226,198 +294,169 @@ export default function TasksPage() {
 
         {/* Stats View */}
         {viewMode === 'stats' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="text-3xl mb-2">📝</div>
-              <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
-              <div className="text-sm text-gray-600">Jami vazifalar</div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="bg-gray-800 rounded-xl p-4">
+              <div className="text-2xl mb-1">📝</div>
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <div className="text-xs text-gray-400">Jami</div>
             </div>
-            <div className="bg-yellow-50 rounded-xl shadow-md p-6">
-              <div className="text-3xl mb-2">⏳</div>
-              <div className="text-2xl font-bold text-yellow-700">{stats.pending}</div>
-              <div className="text-sm text-yellow-600">Bajarilmagan</div>
+            <div className="bg-yellow-900 bg-opacity-30 rounded-xl p-4">
+              <div className="text-2xl mb-1">⏳</div>
+              <div className="text-2xl font-bold text-yellow-400">{stats.pending}</div>
+              <div className="text-xs text-yellow-400">Bajarilmagan</div>
             </div>
-            <div className="bg-green-50 rounded-xl shadow-md p-6">
-              <div className="text-3xl mb-2">✅</div>
-              <div className="text-2xl font-bold text-green-700">{stats.done}</div>
-              <div className="text-sm text-green-600">Bajarilgan</div>
+            <div className="bg-green-900 bg-opacity-30 rounded-xl p-4">
+              <div className="text-2xl mb-1">✅</div>
+              <div className="text-2xl font-bold text-green-400">{stats.done}</div>
+              <div className="text-xs text-green-400">Bajarilgan</div>
             </div>
-            <div className="bg-purple-50 rounded-xl shadow-md p-6">
-              <div className="text-3xl mb-2">📎</div>
-              <div className="text-2xl font-bold text-purple-700">{stats.withMedia}</div>
-              <div className="text-sm text-purple-600">Media bilan</div>
+            <div className="bg-purple-900 bg-opacity-30 rounded-xl p-4">
+              <div className="text-2xl mb-1">📎</div>
+              <div className="text-2xl font-bold text-purple-400">{stats.withMedia}</div>
+              <div className="text-xs text-purple-400">Media</div>
             </div>
           </div>
         )}
 
         {/* Add Task */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Yangi vazifa qo'shish</h2>
+        <div className="bg-gray-800 rounded-xl p-4 mb-3">
           <div className="flex gap-2">
             <input
               type="text"
               value={newTask}
               onChange={(e) => setNewTask(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addTask()}
-              placeholder="Vazifa nomini kiriting..."
-              className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              placeholder="Yangi vazifa..."
+              className="flex-1 px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={loading}
             />
             <button
               onClick={addTask}
               disabled={loading || !newTask.trim()}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md transition"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              {loading ? 'Yuklanmoqda...' : '➕ Qo\'shish'}
+              {loading ? '...' : '➕'}
             </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex flex-wrap gap-4 items-center">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="🔍 Qidirish..."
-              className="flex-1 min-w-[200px] px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFilterStatus('all')}
-                className={`px-4 py-2 rounded-lg font-medium ${
-                  filterStatus === 'all'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Hammasi
-              </button>
-              <button
-                onClick={() => setFilterStatus('pending')}
-                className={`px-4 py-2 rounded-lg font-medium ${
-                  filterStatus === 'pending'
-                    ? 'bg-yellow-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                ⏳ Bajarilmagan
-              </button>
-              <button
-                onClick={() => setFilterStatus('done')}
-                className={`px-4 py-2 rounded-lg font-medium ${
-                  filterStatus === 'done'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                ✅ Bajarilgan
-              </button>
-            </div>
+        <div className="bg-gray-800 rounded-xl p-3 mb-3">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="🔍 Qidirish..."
+            className="w-full px-3 py-2 mb-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilterStatus('all')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium ${
+                filterStatus === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-700 text-gray-300'
+              }`}
+            >
+              Hammasi
+            </button>
+            <button
+              onClick={() => setFilterStatus('pending')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium ${
+                filterStatus === 'pending'
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-gray-700 text-gray-300'
+              }`}
+            >
+              ⏳
+            </button>
+            <button
+              onClick={() => setFilterStatus('done')}
+              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium ${
+                filterStatus === 'done'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-700 text-gray-300'
+              }`}
+            >
+              ✅
+            </button>
           </div>
         </div>
 
         {/* Tasks List */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">
-            Vazifalar ({tasks.length})
-          </h2>
+        <div className="space-y-3">
           {tasks.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">📭</div>
-              <p className="text-gray-500 text-lg">
+            <div className="text-center py-8 bg-gray-800 rounded-xl">
+              <div className="text-5xl mb-3">📭</div>
+              <p className="text-gray-400">
                 {searchQuery || filterStatus !== 'pending'
-                  ? 'Hech narsa topilmadi'
-                  : 'Vazifalar yo\'q. Yuqorida yangi vazifa qo\'shing!'}
+                  ? 'Hech narsa yo\'q'
+                  : 'Vazifa qo\'shing!'}
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {tasks.map((task) => (
-                <div
-                  key={task.id}
-                  className={`p-5 rounded-xl transition hover:shadow-md ${
-                    task.status === 'done'
-                      ? 'bg-green-50 border-2 border-green-200'
-                      : 'bg-gray-50 border-2 border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-2xl">{task.status === 'done' ? '✅' : '⏳'}</span>
-                        <span className="text-lg">{getSourceIcon(task.source)}</span>
-                        <span className="text-sm text-gray-500">#{task.id}</span>
-                      </div>
-                      <p className={`text-lg font-medium mb-2 ${
-                        task.status === 'done' ? 'line-through text-gray-600' : 'text-gray-800'
-                      }`}>
-                        {task.task_text}
+            tasks.map((task) => (
+              <div
+                key={task.id}
+                className={`p-4 rounded-xl ${
+                  task.status === 'done'
+                    ? 'bg-green-900 bg-opacity-20 border border-green-800'
+                    : 'bg-gray-800 border border-gray-700'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">{task.status === 'done' ? '✅' : '⏳'}</span>
+                      <span>{getSourceIcon(task.source)}</span>
+                      <span className="text-xs text-gray-500">#{task.id}</span>
+                    </div>
+                    <p className={`mb-2 ${
+                      task.status === 'done' ? 'line-through text-gray-500' : ''
+                    }`}>
+                      {task.task_text}
+                    </p>
+                    {task.due_date && (
+                      <p className="text-sm text-gray-400 mb-2">
+                        📅 {task.due_date}
+                        {task.due_time && ` ⏰ ${task.due_time}`}
                       </p>
-                      {task.due_date && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          📅 {task.due_date}
-                          {task.due_time && ` ⏰ ${task.due_time}`}
-                        </p>
-                      )}
-                      {task.original_text && task.original_text !== task.task_text && (
-                        <details className="text-xs text-gray-500 mt-2">
-                          <summary className="cursor-pointer hover:text-gray-700">
-                            Original matn
-                          </summary>
-                          <p className="mt-1 italic">{task.original_text}</p>
-                        </details>
-                      )}
+                    )}
 
-                      {/* Attachments */}
-                      {task.attachments.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          {task.attachments.map(renderAttachment)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {task.status === 'pending' && (
-                        <button
-                          onClick={() => markDone(task.id)}
-                          className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 whitespace-nowrap transition"
-                        >
-                          ✓ Bajarildi
-                        </button>
-                      )}
+                    {/* Attachments */}
+                    {task.attachments.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {task.attachments.map(renderAttachment)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {task.status === 'pending' && (
                       <button
-                        onClick={() => deleteTask(task.id)}
-                        className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 whitespace-nowrap transition"
+                        onClick={() => markDone(task.id)}
+                        className="px-3 py-2 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700"
                       >
-                        🗑️ O'chirish
+                        ✓
                       </button>
-                    </div>
+                    )}
+                    <button
+                      onClick={() => deleteTask(task.id)}
+                      className="px-3 py-2 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center">
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <p className="text-gray-700 mb-2">
-              🤖 Telegram botdan ham foydalanishingiz mumkin:
-            </p>
-            <a
-              href="https://t.me/td_ls_bot"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition shadow-md"
-            >
-              @td_ls_bot ga o'tish
-            </a>
-            <p className="text-xs text-gray-500 mt-4">
-              Rasm, video, ovozli xabar va hujjatlarni botga yuboring!
-            </p>
-          </div>
+        <div className="mt-4 text-center">
+          <p className="text-xs text-gray-500">
+            Rasm, video, ovoz va hujjatlarni botga yuboring!
+          </p>
         </div>
       </div>
     </div>

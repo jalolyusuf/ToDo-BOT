@@ -5,13 +5,17 @@ from datetime import datetime
 
 from aiogram import F, Router, types
 from aiogram.filters import Command
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
+from app.core.config import get_settings
 from app.db import async_session_factory
 from app.models import Attachment, AttachmentType, TaskSource, TaskStatus
 from app.services.file_service import file_service
 from app.services.speech_service import speech_service
 from app.services.task_service import task_service
 from app.services.user_service import get_or_create_user
+
+settings = get_settings()
 
 router = Router()
 
@@ -36,8 +40,10 @@ Vazifalaringizni boshqaring!
 **Qanday ishlaydi:**
 • Matn yoki ovoz xabari yuboring - vazifa qo'shiladi
 • Sana avtomatik ajratiladi (masalan: "ertaga", "3-sentabrda")
+• Rasm, video, ovoz va hujjatlar ham qo'shish mumkin!
 
 **Buyruqlar:**
+/webapp - Web interfeys (tavsiya etiladi!)
 /list - Vazifalar ro'yxati
 /done <id> - Bajarildi
 /delete <id> - O'chirish
@@ -45,7 +51,39 @@ Vazifalaringizni boshqaring!
 **Misol:**
 "3-sentabrda hisobot topshirish" ✅"""
 
-    await message.answer(welcome_text, parse_mode="Markdown")
+    # Create Web App button
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📋 Vazifalar (Web App)",
+                    web_app=WebAppInfo(url=settings.telegram_webhook_url)
+                )
+            ]
+        ]
+    )
+
+    await message.answer(welcome_text, parse_mode="Markdown", reply_markup=keyboard)
+
+
+@router.message(Command("webapp"))
+async def cmd_webapp(message: types.Message):
+    """Open Web App."""
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="📋 Vazifalarni ochish",
+                    web_app=WebAppInfo(url=settings.telegram_webhook_url)
+                )
+            ]
+        ]
+    )
+    await message.answer(
+        "🌐 **Web interfeys**\n\nQulayroq foydalanish uchun quyidagi tugmani bosing:",
+        parse_mode="Markdown",
+        reply_markup=keyboard
+    )
 
 
 @router.message(Command("list"))
