@@ -70,7 +70,7 @@ services:
       dockerfile: Dockerfile
     container_name: todo-bot-frontend
     ports:
-      - "3000:80"
+      - "5000:80"
     depends_on:
       - backend
     restart: unless-stopped
