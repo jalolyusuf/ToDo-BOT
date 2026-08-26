@@ -37,15 +37,32 @@ class SessionService:
         return user_session
 
     @staticmethod
-    async def reset_session(session: AsyncSession, user_id: UUID) -> UserSession:
+    async def reset_session(session: AsyncSession, user_id: UUID, keep_last_task: bool = False) -> UserSession:
         """Reset user session to IDLE."""
         user_session = await SessionService.get_or_create_session(session, user_id)
         user_session.state = SessionState.IDLE
         user_session.task_messages = None
         user_session.task_attachments = None
+        if not keep_last_task:
+            user_session.last_task_id = None
         await session.commit()
         await session.refresh(user_session)
         return user_session
+
+    @staticmethod
+    async def set_last_task(session: AsyncSession, user_id: UUID, task_id: int) -> UserSession:
+        """Set last created task ID for attachment linking."""
+        user_session = await SessionService.get_or_create_session(session, user_id)
+        user_session.last_task_id = task_id
+        await session.commit()
+        await session.refresh(user_session)
+        return user_session
+
+    @staticmethod
+    async def get_last_task_id(session: AsyncSession, user_id: UUID) -> int | None:
+        """Get last created task ID."""
+        user_session = await SessionService.get_or_create_session(session, user_id)
+        return user_session.last_task_id
 
     @staticmethod
     async def add_task_message(session: AsyncSession, user_id: UUID, message: str) -> UserSession:

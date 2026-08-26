@@ -18,6 +18,7 @@ class SessionState(str, Enum):
     CREATING_TASK = "creating_task"
     WAITING_FOR_DATE = "waiting_for_date"
     WAITING_FOR_CONFIRMATION = "waiting_for_confirmation"
+    WAITING_FOR_ATTACHMENTS = "waiting_for_attachments"
 
 
 class UserSession(Base):
@@ -34,6 +35,7 @@ class UserSession(Base):
     # Task creation temporary data
     task_messages: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array of messages
     task_attachments: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array of attachment IDs
+    last_task_id: Mapped[int | None] = mapped_column(nullable=True)  # Last created task for attachments
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(

@@ -212,5 +212,98 @@ FAQAT JSON qaytar, hech qanday tushuntirish yozma:
             }
 
 
+    async def analyze_message(self, user_message: str, current_datetime: str | None = None) -> dict[str, Any]:
+        """
+        Analyze user message to detect intent and extract task info.
+
+        Returns:
+            dict with keys:
+            - intent: "create_task" | "wait_for_attachments" | "question" | "greeting" | "other"
+            - task_text: task description (if intent is create_task)
+            - date: YYYY-MM-DD (if specified)
+            - time: HH:MM (if specified)
+        """
+        if not self.is_available:
+            return {"intent": "other", "error": "Claude API not configured"}
+
+        if not current_datetime:
+            now = datetime.now()
+            current_date = now.strftime("%Y-%m-%d")
+            current_time = now.strftime("%H:%M")
+        else:
+            parts = current_datetime.split(" ")
+            current_date = parts[0]
+            current_time = parts[1] if len(parts) > 1 else "12:00"
+            now = datetime.strptime(current_date, "%Y-%m-%d")
+
+        tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+        current_year = now.year
+
+        prompt = f"""Sen Telegram bot yordamchisisan. Foydalanuvchi xabarini tahlil qil va JSON formatida javob qaytar.
+
+**Hozirgi vaqt: {current_date} {current_time}**
+
+**NIYAT TURLARI (intent):**
+1. "create_task" - foydalanuvchi vazifa/eslatma yaratmoqchi
+   - "ertaga shifokorga bor", "bugun kechqurun do'konga chiq", "5 minutdan keyin qo'ng'iroq qil"
+   - "menga ... eslatib qo'y", "... qilishim kerak", "... vaqtida ..."
+
+2. "wait_for_attachments" - foydalanuvchi qo'shimcha ma'lumot/fayl yubormoqchi
+   - "kut", "kutib tur", "hozir yuboraman", "qo'shimcha", "rasm ham bor", "fayl tashlayman"
+
+3. "greeting" - salomlashish
+   - "salom", "hi", "assalomu alaykum", "qalay"
+
+4. "question" - savol
+   - "bu nima?", "qanday ishlaydi?", "yordam"
+
+5. "other" - boshqa
+
+**AGAR intent = "create_task" BO'LSA:**
+- task_text: vazifa matni (sana/vaqt so'zlarisiz)
+- date: YYYY-MM-DD formatida (bugun={current_date}, ertaga={tomorrow})
+- time: HH:MM formatida
+  - "hozir" → "{current_time}"
+  - "5 minutdan keyin" → hozirga 5 minut qo'sh
+  - "1 soatdan keyin" → hozirga 1 soat qo'sh
+  - "ertalab" → "09:00", "tushlik/obed" → "12:00", "kechqurun" → "18:00"
+
+**Foydalanuvchi xabari:** "{user_message}"
+
+FAQAT JSON qaytar:
+{{"intent": "...", "task_text": "..." yoki null, "date": "YYYY-MM-DD" yoki null, "time": "HH:MM" yoki null}}"""
+
+        try:
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=300,
+                temperature=0.1,
+                messages=[{"role": "user", "content": prompt}],
+            )
+
+            response_text = message.content[0].text.strip()
+
+            if response_text.startswith("```"):
+                response_text = response_text.split("```")[1]
+                if response_text.startswith("json"):
+                    response_text = response_text[4:]
+                response_text = response_text.strip()
+
+            result = json.loads(response_text)
+
+            return {
+                "intent": result.get("intent", "other"),
+                "task_text": result.get("task_text") if result.get("task_text") not in ["null", None, ""] else None,
+                "date": result.get("date") if result.get("date") not in ["null", None, ""] else None,
+                "time": result.get("time") if result.get("time") not in ["null", None, ""] else None,
+            }
+
+        except Exception as e:
+            return {
+                "intent": "other",
+                "error": str(e),
+            }
+
+
 # Singleton instance
 claude_client = ClaudeClient()

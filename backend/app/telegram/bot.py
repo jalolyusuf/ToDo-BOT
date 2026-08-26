@@ -24,7 +24,7 @@ def create_dispatcher() -> Dispatcher:
 
     # Register routers (order matters!)
     dp.include_router(reminder_handlers.router)  # Reminder callbacks (buttons)
-    dp.include_router(handlers.router)  # Basic commands FIRST (/start, /delete, /done, /list)
-    dp.include_router(conversational_handlers.router)  # State-aware handlers LAST (catches all text)
+    dp.include_router(conversational_handlers.router)  # AI-powered handlers (/start, /list, text, media)
+    dp.include_router(handlers.router)  # Additional commands (/webapp, /delete, /done)
 
     return dp
