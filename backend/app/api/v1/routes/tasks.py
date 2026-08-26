@@ -27,6 +27,7 @@ class AttachmentResponse(BaseModel):
     file_type: str
     file_name: str
     file_url: str
+    thumbnail_url: str | None
     file_size: int | None
     mime_type: str | None
     duration: int | None
@@ -100,6 +101,7 @@ async def get_tasks(
                     file_type=att.file_type.value if hasattr(att.file_type, 'value') else att.file_type,
                     file_name=att.file_name,
                     file_url=f"/api/v1/files/{att.id}",
+                    thumbnail_url=f"/api/v1/files/{att.id}/thumbnail" if att.thumbnail_path else None,
                     file_size=att.file_size,
                     mime_type=att.mime_type,
                     duration=att.duration,
@@ -203,6 +205,7 @@ async def update_task(
                 file_type=att.file_type.value if hasattr(att.file_type, 'value') else att.file_type,
                 file_name=att.file_name,
                 file_url=f"/api/v1/files/{att.id}",
+                thumbnail_url=f"/api/v1/files/{att.id}/thumbnail" if att.thumbnail_path else None,
                 file_size=att.file_size,
                 mime_type=att.mime_type,
                 duration=att.duration,

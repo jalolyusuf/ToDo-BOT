@@ -36,6 +36,7 @@ class FileService:
         duration = None
         width = None
         height = None
+        thumbnail_path = None
 
         # Extract file info based on type
         if file_type == AttachmentType.PHOTO:
@@ -67,6 +68,13 @@ class FileService:
             height = video.height
             mime_type = video.mime_type
             file_name = video.file_name or f"{uuid4().hex}.mp4"
+            # Save video thumbnail if available
+            if video.thumbnail:
+                thumb_file = await bot.get_file(video.thumbnail.file_id)
+                thumb_name = f"thumb_{uuid4().hex}.jpg"
+                thumb_full_path = STORAGE_DIR / thumb_name
+                await bot.download_file(thumb_file.file_path, thumb_full_path)
+                thumbnail_path = str(thumb_full_path)
 
         elif file_type == AttachmentType.DOCUMENT:
             document = message.document
@@ -112,6 +120,7 @@ class FileService:
             "duration": duration,
             "width": width,
             "height": height,
+            "thumbnail_path": thumbnail_path,  # Video thumbnail
         }
 
     @staticmethod

@@ -54,20 +54,25 @@ async def play_media(
                 video=attachment.telegram_file_id,
                 caption=f"🎬 {attachment.file_name}",
             )
-        elif attachment.file_type.value in ["voice", "audio"]:
-            if attachment.file_type.value == "voice":
-                await bot.send_voice(
-                    chat_id=user.telegram_id,
-                    voice=attachment.telegram_file_id,
-                )
-            else:
-                await bot.send_audio(
-                    chat_id=user.telegram_id,
-                    audio=attachment.telegram_file_id,
-                    caption=f"🎵 {attachment.file_name}",
-                )
+        elif attachment.file_type.value == "voice":
+            await bot.send_voice(
+                chat_id=user.telegram_id,
+                voice=attachment.telegram_file_id,
+            )
+        elif attachment.file_type.value == "audio":
+            await bot.send_audio(
+                chat_id=user.telegram_id,
+                audio=attachment.telegram_file_id,
+                caption=f"🎵 {attachment.file_name}",
+            )
+        elif attachment.file_type.value == "document":
+            await bot.send_document(
+                chat_id=user.telegram_id,
+                document=attachment.telegram_file_id,
+                caption=f"📄 {attachment.file_name}",
+            )
         else:
-            raise HTTPException(status_code=400, detail="File type not supported for playback")
+            raise HTTPException(status_code=400, detail="File type not supported")
 
         return {"status": "sent", "message": "Media yuborildi! Telegram'da ko'ring."}
 
