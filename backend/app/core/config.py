@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # Claude AI (for task parsing) - optional, date parsing now uses simple_date_parser
     claude_api_key: str | None = None
-    claude_model: str = "claude-3-haiku-20240307"
+    claude_model: str = "claude-haiku-4-5-20251001"
 
     # OpenAI (for speech-to-text) - optional
     openai_api_key: str | None = None
