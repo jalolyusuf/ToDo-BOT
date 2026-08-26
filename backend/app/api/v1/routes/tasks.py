@@ -220,7 +220,7 @@ async def delete_task(
     session: AsyncSession = Depends(get_session),
     user_id: UUID = Depends(get_current_user_id),
 ):
-    """Delete task."""
+    """Delete task permanently."""
     stmt = select(Task).where(Task.id == task_id, Task.user_id == user_id)
     result = await session.execute(stmt)
     task = result.scalar_one_or_none()
@@ -228,5 +228,6 @@ async def delete_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    task.status = TaskStatus.DELETED
+    # Delete attachments first, then task
+    await session.delete(task)
     await session.commit()
