@@ -45,7 +45,6 @@ interface Task {
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [allTasks, setAllTasks] = useState<Task[]>([])
-  const [loading, setLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'done'>('pending')
   const [isTelegram, setIsTelegram] = useState(false)
   const [telegramUser, setTelegramUser] = useState<any>(null)
