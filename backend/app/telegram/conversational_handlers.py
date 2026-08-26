@@ -262,19 +262,31 @@ async def handle_text(message: types.Message):
                 )
 
             else:
-                # If we have a last task, maybe they want to add note
-                if user_session.last_task_id:
-                    await message.answer(
-                        "📝 Yangi vazifa yaratmoqchimisiz?\n"
-                        "Yoki \"tayyor\" deng oldingi vazifani yakunlash uchun.",
-                        parse_mode="Markdown"
-                    )
-                else:
-                    await message.answer(
-                        "🤔 Tushunmadim. Vazifa yaratmoqchimisiz?\n\n"
-                        "Masalan: \"Ertaga soat 15 da do'konga bor\"",
-                        parse_mode="Markdown"
-                    )
+                # Default: create task anyway (be proactive!)
+                task = Task(
+                    user_id=user.id,
+                    task_text=message.text,
+                    original_text=message.text,
+                    due_date=None,
+                    due_time=None,
+                    status=TaskStatus.PENDING,
+                    source=TaskSource.TEXT,
+                )
+                session.add(task)
+                await session.commit()
+                await session.refresh(task)
+
+                await session_service.set_last_task(session, user.id, task.id)
+                await session_service.set_state(session, user.id, SessionState.WAITING_FOR_ATTACHMENTS)
+
+                await message.answer(
+                    f"✅ **Vazifa yaratildi!**\n\n"
+                    f"📝 {message.text}\n"
+                    f"📅 Sana ko'rsatilmagan\n\n"
+                    f"_Rasm/video/fayl yuborishingiz mumkin_\n"
+                    f"_Tayyor bo'lgach \"tayyor\" deng yoki /done_",
+                    parse_mode="Markdown"
+                )
 
         except Exception as e:
             await message.answer(

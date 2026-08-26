@@ -239,39 +239,40 @@ FAQAT JSON qaytar, hech qanday tushuntirish yozma:
         tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
         current_year = now.year
 
-        prompt = f"""Sen Telegram bot yordamchisisan. Foydalanuvchi xabarini tahlil qil va JSON formatida javob qaytar.
+        prompt = f"""Sen Telegram vazifa boti yordamchisisan. Foydalanuvchi xabarini tahlil qil.
 
 **Hozirgi vaqt: {current_date} {current_time}**
 
-**NIYAT TURLARI (intent):**
-1. "create_task" - foydalanuvchi vazifa/eslatma yaratmoqchi
-   - "ertaga shifokorga bor", "bugun kechqurun do'konga chiq", "5 minutdan keyin qo'ng'iroq qil"
-   - "menga ... eslatib qo'y", "... qilishim kerak", "... vaqtida ..."
+**NIYAT TURLARI (intent) - MUHIM:**
 
-2. "wait_for_attachments" - foydalanuvchi qo'shimcha ma'lumot/fayl yubormoqchi
-   - "kut", "kutib tur", "hozir yuboraman", "qo'shimcha", "rasm ham bor", "fayl tashlayman"
+1. "create_task" - ASOSIY NIYAT! Quyidagilarning BARCHASI vazifa hisoblanadi:
+   - Har qanday ish/vazifa/eslatma: "rasm uchun test", "loyiha tayyorlash", "kitob o'qish"
+   - Sana bilan: "ertaga shifokorga", "5 minutdan keyin qo'ng'iroq"
+   - Sanasiz ham: "ovqat pishirish", "uyni tozalash", "test vazifa"
+   - QOIDA: Agar xabar savol yoki salom emas - bu VAZIFA!
 
-3. "greeting" - salomlashish
-   - "salom", "hi", "assalomu alaykum", "qalay"
+2. "wait_for_attachments" - FAQAT bu so'zlar bo'lsa:
+   - "kut", "kutib tur", "hozir yuboraman", "rasm ham bor"
 
-4. "question" - savol
-   - "bu nima?", "qanday ishlaydi?", "yordam"
+3. "greeting" - FAQAT salomlashish:
+   - "salom", "hi", "assalomu alaykum"
 
-5. "other" - boshqa
+4. "question" - FAQAT savol belgisi bilan:
+   - "bu nima?", "qanday?", "yordam?"
 
-**AGAR intent = "create_task" BO'LSA:**
-- task_text: vazifa matni (sana/vaqt so'zlarisiz)
-- date: YYYY-MM-DD formatida (bugun={current_date}, ertaga={tomorrow})
-- time: HH:MM formatida
-  - "hozir" → "{current_time}"
-  - "5 minutdan keyin" → hozirga 5 minut qo'sh
-  - "1 soatdan keyin" → hozirga 1 soat qo'sh
-  - "ertalab" → "09:00", "tushlik/obed" → "12:00", "kechqurun" → "18:00"
+5. "other" - DEYARLI HECH QACHON ishlatma!
+
+**MUHIM: Agar shubha bo'lsa - "create_task" tanlang!**
+
+**Agar intent = "create_task":**
+- task_text: vazifa matni
+- date: YYYY-MM-DD (bugun={current_date}, ertaga={tomorrow}) yoki null
+- time: HH:MM yoki null
 
 **Foydalanuvchi xabari:** "{user_message}"
 
-FAQAT JSON qaytar:
-{{"intent": "...", "task_text": "..." yoki null, "date": "YYYY-MM-DD" yoki null, "time": "HH:MM" yoki null}}"""
+JSON:
+{{"intent": "...", "task_text": "...", "date": "..." yoki null, "time": "..." yoki null}}"""
 
         try:
             message = self.client.messages.create(
