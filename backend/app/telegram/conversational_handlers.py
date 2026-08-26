@@ -143,13 +143,21 @@ async def handle_text_stateful(message: types.Message):
             try:
                 from datetime import datetime, timezone as tz
                 from zoneinfo import ZoneInfo
+                from app.services.claude_client import claude_client
                 from app.services.simple_date_parser import simple_date_parser
 
-                # Parse date with simple parser (NO AI!)
                 # Use Uzbekistan timezone (UTC+5)
                 uzbekistan_tz = ZoneInfo("Asia/Tashkent")
                 current_dt = datetime.now(uzbekistan_tz)
-                parsed = simple_date_parser.parse(message.text, current_dt)
+
+                # Try Claude AI first, fallback to simple parser
+                if claude_client.is_available:
+                    parsed = await claude_client.parse_date_time(
+                        message.text,
+                        current_date=current_dt.strftime("%Y-%m-%d")
+                    )
+                else:
+                    parsed = simple_date_parser.parse(message.text, current_dt)
 
                 task_data = await session_service.get_task_data(session, user.id)
 

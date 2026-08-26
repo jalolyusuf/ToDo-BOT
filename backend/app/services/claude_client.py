@@ -119,5 +119,94 @@ FAQAT JSON qaytar, boshqa matn yoki tushuntirish YOZMA. Format:
             }
 
 
+    async def parse_date_time(self, user_message: str, current_date: str | None = None) -> dict[str, Any]:
+        """
+        Parse user message to extract only date and time.
+
+        Args:
+            user_message: User's date/time input (Uzbek language)
+            current_date: Current date in YYYY-MM-DD format
+
+        Returns:
+            dict with keys: date (YYYY-MM-DD or null), time (HH:MM or null)
+        """
+        if not self.is_available:
+            return {
+                "date": None,
+                "time": None,
+                "error": "Claude API not configured",
+            }
+
+        if not current_date:
+            now = datetime.now()
+            current_date = now.strftime("%Y-%m-%d")
+        else:
+            now = datetime.strptime(current_date, "%Y-%m-%d")
+
+        tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
+        current_year = now.year
+        current_weekday = now.weekday()
+
+        prompt = f"""Sen sana va vaqtni ajratuvchi yordamchisan. Foydalanuvchi xabaridan quyidagilarni JSON formatida qaytar:
+
+- **date**: sana YYYY-MM-DD formatida
+- **time**: vaqt HH:MM formatida
+
+**Bugungi sana: {current_date} (Yil: {current_year})**
+
+**SANA QOIDALARI:**
+- "bugun" → {current_date}
+- "ertaga" → {tomorrow}
+- "3-sentabr", "3 sentabrda", "sentabrning 3 da" → {current_year}-09-03
+- "15-avgust", "avgustning 15 i" → {current_year}-08-15
+- Hafta kunlari (dushanba=0, yakshanba=6): keyingi shu kunni hisoblang
+- Agar sana aniq ko'rsatilmagan → null
+
+**VAQT QOIDALARI:**
+- "12 ga", "12 da", "soat 12", "12:00" → "12:00"
+- "15:30 da", "soat 15:30" → "15:30"
+- "ertalab" → "09:00"
+- "tushlik", "obed", "obet", "abet", "peshin" → "12:00"
+- "kechqurun" → "18:00"
+- "kechasi", "tunda" → "21:00"
+- Agar vaqt aniq ko'rsatilmagan → null
+
+**Foydalanuvchi xabari:** "{user_message}"
+
+FAQAT JSON qaytar:
+{{"date": "YYYY-MM-DD yoki null", "time": "HH:MM yoki null"}}"""
+
+        try:
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=200,
+                temperature=0.1,
+                messages=[{"role": "user", "content": prompt}],
+            )
+
+            response_text = message.content[0].text.strip()
+
+            # Clean markdown code blocks if present
+            if response_text.startswith("```"):
+                response_text = response_text.split("```")[1]
+                if response_text.startswith("json"):
+                    response_text = response_text[4:]
+                response_text = response_text.strip()
+
+            result = json.loads(response_text)
+
+            return {
+                "date": result.get("date") if result.get("date") not in ["null", None, ""] else None,
+                "time": result.get("time") if result.get("time") not in ["null", None, ""] else None,
+            }
+
+        except Exception as e:
+            return {
+                "date": None,
+                "time": None,
+                "error": str(e),
+            }
+
+
 # Singleton instance
 claude_client = ClaudeClient()
