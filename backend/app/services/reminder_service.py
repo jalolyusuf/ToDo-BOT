@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db import async_session_factory
 from app.models import Task, TaskStatus, User
@@ -42,6 +43,7 @@ class ReminderService:
                 # 4. Reminder not sent yet
                 stmt = (
                     select(Task)
+                    .options(selectinload(Task.attachments))
                     .where(Task.status == TaskStatus.PENDING)
                     .where(Task.due_date.isnot(None))
                     .where(Task.reminder_sent == False)
@@ -114,8 +116,8 @@ class ReminderService:
                 f"Bu vazifani qildingizmi?"
             )
 
-            # Attachment info
-            if hasattr(task, 'attachments') and task.attachments:
+            # Attachment info (already eagerly loaded)
+            if task.attachments:
                 attachment_count = len(task.attachments)
                 message += f"\n📎 {attachment_count} ta media bor"
 
