@@ -210,9 +210,15 @@ export default function TasksPage() {
             src={`${baseUrl}${att.file_url}`}
             alt=""
             className="w-full max-h-52 object-cover"
-            onClick={(e) => { e.stopPropagation(); window.open(`${baseUrl}${att.file_url}`, '_blank') }}
           />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all" />
+          <div
+            onClick={(e) => sendMedia(att.id, e)}
+            className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center cursor-pointer"
+          >
+            <div className={`w-14 h-14 rounded-full bg-white/90 shadow-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all ${isSending ? 'opacity-100 scale-100 animate-pulse' : ''}`}>
+              {isSending ? <Spinner /> : <div className="text-blue-600">{Icons.send}</div>}
+            </div>
+          </div>
         </div>
       )
     }
