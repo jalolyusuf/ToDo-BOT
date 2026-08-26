@@ -23,10 +23,14 @@ class FileService:
     @staticmethod
     async def download_telegram_file(bot: Bot, message: Message, file_type: AttachmentType) -> dict:
         """
-        Download file from Telegram and save to storage.
+        Process file from Telegram message.
+
+        If storage channel is configured:
+        - Forward message to channel for permanent storage
+        - Use channel's file_id (never expires)
 
         Returns:
-            dict with file_path, file_name, file_size, etc.
+            dict with file_path, file_name, file_size, channel_message_id, etc.
         """
         file_id = None
         file_unique_id = None
@@ -37,11 +41,11 @@ class FileService:
         width = None
         height = None
         thumbnail_path = None
+        channel_message_id = None
 
         # Extract file info based on type
         if file_type == AttachmentType.PHOTO:
-            # Get largest photo
-            photo = message.photo[-1]
+            photo = message.photo[-1]  # Get largest photo
             file_id = photo.file_id
             file_unique_id = photo.file_unique_id
             file_size = photo.file_size
@@ -68,13 +72,17 @@ class FileService:
             height = video.height
             mime_type = video.mime_type
             file_name = video.file_name or f"{uuid4().hex}.mp4"
+
             # Save video thumbnail if available
             if video.thumbnail:
-                thumb_file = await bot.get_file(video.thumbnail.file_id)
-                thumb_name = f"thumb_{uuid4().hex}.jpg"
-                thumb_full_path = STORAGE_DIR / thumb_name
-                await bot.download_file(thumb_file.file_path, thumb_full_path)
-                thumbnail_path = str(thumb_full_path)
+                try:
+                    thumb_file = await bot.get_file(video.thumbnail.file_id)
+                    thumb_name = f"thumb_{uuid4().hex}.jpg"
+                    thumb_full_path = STORAGE_DIR / thumb_name
+                    await bot.download_file(thumb_file.file_path, thumb_full_path)
+                    thumbnail_path = str(thumb_full_path)
+                except Exception:
+                    pass  # Thumbnail is optional
 
         elif file_type == AttachmentType.DOCUMENT:
             document = message.document
@@ -96,23 +104,53 @@ class FileService:
         if not file_id:
             raise ValueError(f"Could not extract file_id for type {file_type}")
 
-        # For video and audio - DON'T download, use Telegram storage
-        # Only download photos for thumbnails
+        # Forward to storage channel if configured (for permanent file_id)
+        storage_channel_id = settings.telegram_storage_channel_id
+        if storage_channel_id:
+            try:
+                forwarded = await message.forward(chat_id=storage_channel_id)
+                channel_message_id = forwarded.message_id
+
+                # Get file_id from forwarded message (this is permanent)
+                if file_type == AttachmentType.PHOTO and forwarded.photo:
+                    file_id = forwarded.photo[-1].file_id
+                elif file_type == AttachmentType.VIDEO and forwarded.video:
+                    file_id = forwarded.video.file_id
+                    # Also get thumbnail from forwarded message
+                    if forwarded.video.thumbnail and not thumbnail_path:
+                        try:
+                            thumb_file = await bot.get_file(forwarded.video.thumbnail.file_id)
+                            thumb_name = f"thumb_{uuid4().hex}.jpg"
+                            thumb_full_path = STORAGE_DIR / thumb_name
+                            await bot.download_file(thumb_file.file_path, thumb_full_path)
+                            thumbnail_path = str(thumb_full_path)
+                        except Exception:
+                            pass
+                elif file_type == AttachmentType.VOICE and forwarded.voice:
+                    file_id = forwarded.voice.file_id
+                elif file_type == AttachmentType.AUDIO and forwarded.audio:
+                    file_id = forwarded.audio.file_id
+                elif file_type == AttachmentType.DOCUMENT and forwarded.document:
+                    file_id = forwarded.document.file_id
+            except Exception as e:
+                # If forward fails, continue with original file_id
+                print(f"Failed to forward to channel: {e}")
+
+        # Download photos to storage for web display
         file_path_str = None
         if file_type == AttachmentType.PHOTO:
-            # Download photo for web display
-            file = await bot.get_file(file_id)
-            file_path = STORAGE_DIR / file_name
-            await bot.download_file(file.file_path, file_path)
-            file_path_str = str(file_path)
-        else:
-            # Video/Voice/Audio/Document - keep on Telegram, don't download
-            file_path_str = None  # Will use telegram_file_id to retrieve
+            try:
+                file = await bot.get_file(file_id)
+                file_path = STORAGE_DIR / file_name
+                await bot.download_file(file.file_path, file_path)
+                file_path_str = str(file_path)
+            except Exception:
+                pass  # Photo download is optional
 
         return {
             "file_type": file_type,
             "file_name": file_name,
-            "file_path": file_path_str,  # None for video/audio (use Telegram storage)
+            "file_path": file_path_str,
             "file_size": file_size,
             "mime_type": mime_type,
             "telegram_file_id": file_id,
@@ -120,7 +158,8 @@ class FileService:
             "duration": duration,
             "width": width,
             "height": height,
-            "thumbnail_path": thumbnail_path,  # Video thumbnail
+            "thumbnail_path": thumbnail_path,
+            "channel_message_id": channel_message_id,
         }
 
     @staticmethod

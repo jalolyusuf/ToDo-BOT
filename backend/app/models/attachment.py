@@ -38,6 +38,7 @@ class Attachment(Base):
     telegram_file_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     telegram_file_unique_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     thumbnail_path: Mapped[str | None] = mapped_column(String(500), nullable=True)  # Video thumbnail
+    channel_message_id: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Message ID in storage channel
 
     # Media metadata
     duration: Mapped[int | None] = mapped_column(Integer, nullable=True)  # seconds (for audio/video)

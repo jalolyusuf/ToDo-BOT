@@ -7,11 +7,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user_id
+from app.core.config import get_settings
 from app.db import get_session
 from app.models import Attachment, User
 from app.telegram.bot import create_bot
 
 router = APIRouter()
+settings = get_settings()
 
 
 @router.post("/media/{attachment_id}/play")
@@ -23,8 +25,8 @@ async def play_media(
     """
     Send video/audio to user via Telegram bot.
 
-    This endpoint is called when user clicks "Play" in Web UI.
-    Bot sends the media file to user's Telegram.
+    Uses storage channel if configured (forwards from channel).
+    Otherwise sends using telegram_file_id.
     """
     # Get attachment
     stmt = select(Attachment).where(Attachment.id == attachment_id)
@@ -48,28 +50,49 @@ async def play_media(
     # Send via bot
     bot = create_bot()
     try:
-        if attachment.file_type.value == "video":
+        file_type = attachment.file_type.value if hasattr(attachment.file_type, 'value') else attachment.file_type
+        storage_channel_id = settings.telegram_storage_channel_id
+
+        # Try to forward from storage channel first (most reliable)
+        if storage_channel_id and attachment.channel_message_id:
+            try:
+                await bot.forward_message(
+                    chat_id=user.telegram_id,
+                    from_chat_id=storage_channel_id,
+                    message_id=attachment.channel_message_id,
+                )
+                return {"status": "sent", "message": "Media yuborildi! Telegram'da ko'ring."}
+            except Exception:
+                pass  # Fall back to direct send
+
+        # Fall back to sending using file_id
+        if file_type == "video":
             await bot.send_video(
                 chat_id=user.telegram_id,
                 video=attachment.telegram_file_id,
                 caption=f"🎬 {attachment.file_name}",
             )
-        elif attachment.file_type.value == "voice":
+        elif file_type == "voice":
             await bot.send_voice(
                 chat_id=user.telegram_id,
                 voice=attachment.telegram_file_id,
             )
-        elif attachment.file_type.value == "audio":
+        elif file_type == "audio":
             await bot.send_audio(
                 chat_id=user.telegram_id,
                 audio=attachment.telegram_file_id,
                 caption=f"🎵 {attachment.file_name}",
             )
-        elif attachment.file_type.value == "document":
+        elif file_type == "document":
             await bot.send_document(
                 chat_id=user.telegram_id,
                 document=attachment.telegram_file_id,
                 caption=f"📄 {attachment.file_name}",
+            )
+        elif file_type == "photo":
+            await bot.send_photo(
+                chat_id=user.telegram_id,
+                photo=attachment.telegram_file_id,
             )
         else:
             raise HTTPException(status_code=400, detail="File type not supported")

@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     telegram_bot_token: str
     telegram_webhook_url: str | None = None
     telegram_webhook_secret: str | None = None
+    telegram_storage_channel_id: int | None = None  # Channel to store media files permanently
 
     # Security
     secret_key: str

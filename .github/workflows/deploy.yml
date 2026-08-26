@@ -30,6 +30,7 @@ jobs:
           TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_URL=${{ secrets.TELEGRAM_WEBHOOK_URL }}
           TELEGRAM_WEBHOOK_SECRET=${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          TELEGRAM_STORAGE_CHANNEL_ID=${{ secrets.TELEGRAM_STORAGE_CHANNEL_ID }}
 
           # Security
           SECRET_KEY=${{ secrets.SECRET_KEY }}
