@@ -143,11 +143,14 @@ async def handle_text_stateful(message: types.Message):
 
         # If waiting for date - parse and create task
         if user_session.state == SessionState.WAITING_FOR_DATE:
-            from datetime import datetime
+            from datetime import datetime, timezone as tz
+            from zoneinfo import ZoneInfo
             from app.services.simple_date_parser import simple_date_parser
 
             # Parse date with simple parser (NO AI!)
-            current_dt = datetime.now()
+            # Use Uzbekistan timezone (UTC+5)
+            uzbekistan_tz = ZoneInfo("Asia/Tashkent")
+            current_dt = datetime.now(uzbekistan_tz)
             parsed = simple_date_parser.parse(message.text, current_dt)
 
             task_data = await session_service.get_task_data(session, user.id)
@@ -156,12 +159,22 @@ async def handle_text_stateful(message: types.Message):
             task_text = " | ".join(task_data["messages"])
             original_text = task_text
 
+            # Parse due_date with timezone
+            due_date = None
+            if parsed.get("date"):
+                # Create date with Uzbekistan timezone
+                date_str = parsed["date"]
+                time_str = parsed.get("time", "09:00")  # Default to 9 AM if no time
+                dt_str = f"{date_str} {time_str}"
+                naive_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+                due_date = naive_dt.replace(tzinfo=uzbekistan_tz)
+
             # Create task
             task = Task(
                 user_id=user.id,
                 task_text=task_text,
                 original_text=original_text,
-                due_date=datetime.fromisoformat(parsed["date"]) if parsed.get("date") else None,
+                due_date=due_date,
                 due_time=parsed.get("time"),
                 status=TaskStatus.PENDING,
                 source=TaskSource.TEXT,

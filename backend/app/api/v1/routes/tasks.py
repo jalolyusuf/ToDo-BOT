@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -14,6 +15,9 @@ from app.db import get_session
 from app.models import Attachment, Task, TaskStatus
 
 router = APIRouter()
+
+# Uzbekistan timezone (UTC+5)
+UZBEKISTAN_TZ = ZoneInfo("Asia/Tashkent")
 
 
 class AttachmentResponse(BaseModel):
@@ -116,10 +120,19 @@ async def create_task(
     user_id: UUID = Depends(get_current_user_id),
 ):
     """Create new task."""
+    # Parse due_date with timezone
+    due_date = None
+    if task_data.due_date:
+        date_str = task_data.due_date
+        time_str = task_data.due_time or "09:00"
+        dt_str = f"{date_str} {time_str}"
+        naive_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+        due_date = naive_dt.replace(tzinfo=UZBEKISTAN_TZ)
+
     task = Task(
         user_id=user_id,
         task_text=task_data.task_text,
-        due_date=datetime.fromisoformat(task_data.due_date) if task_data.due_date else None,
+        due_date=due_date,
         due_time=task_data.due_time,
         status=TaskStatus.PENDING,
     )
@@ -158,13 +171,19 @@ async def update_task(
     if task_data.task_text is not None:
         task.task_text = task_data.task_text
     if task_data.due_date is not None:
-        task.due_date = datetime.fromisoformat(task_data.due_date)
+        # Parse due_date with timezone
+        date_str = task_data.due_date
+        time_str = task_data.due_time or task.due_time or "09:00"
+        dt_str = f"{date_str} {time_str}"
+        naive_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+        task.due_date = naive_dt.replace(tzinfo=UZBEKISTAN_TZ)
+        task.reminder_sent = False  # Reset reminder when date changes
     if task_data.due_time is not None:
         task.due_time = task_data.due_time
     if task_data.status is not None:
         task.status = task_data.status
         if task_data.status == TaskStatus.DONE:
-            task.completed_at = datetime.now(timezone.utc)
+            task.completed_at = datetime.now(UZBEKISTAN_TZ)
 
     await session.commit()
     await session.refresh(task, ["attachments"])

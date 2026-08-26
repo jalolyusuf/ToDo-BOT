@@ -23,12 +23,12 @@ class Settings(BaseSettings):
     # Database
     database_url: str
 
-    # Claude AI (for task parsing)
-    claude_api_key: str
+    # Claude AI (for task parsing) - optional, date parsing now uses simple_date_parser
+    claude_api_key: str | None = None
     claude_model: str = "claude-3-haiku-20240307"
 
-    # OpenAI (for speech-to-text)
-    openai_api_key: str
+    # OpenAI (for speech-to-text) - optional
+    openai_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
 
     # Telegram

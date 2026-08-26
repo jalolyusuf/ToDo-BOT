@@ -16,8 +16,15 @@ class ClaudeClient:
 
     def __init__(self):
         """Initialize Claude client."""
-        self.client = Anthropic(api_key=settings.claude_api_key)
+        self.client = None
         self.model = settings.claude_model
+        if settings.claude_api_key:
+            self.client = Anthropic(api_key=settings.claude_api_key)
+
+    @property
+    def is_available(self) -> bool:
+        """Check if Claude client is configured."""
+        return self.client is not None
 
     async def parse_task(self, user_message: str, current_date: str | None = None) -> dict[str, Any]:
         """
@@ -30,6 +37,14 @@ class ClaudeClient:
         Returns:
             dict with keys: task, date (YYYY-MM-DD or null), time (HH:MM or null)
         """
+        if not self.is_available:
+            return {
+                "task": user_message,
+                "date": None,
+                "time": None,
+                "error": "Claude API not configured",
+            }
+
         if not current_date:
             now = datetime.now()
             current_date = now.strftime("%Y-%m-%d")

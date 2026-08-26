@@ -1,6 +1,7 @@
 """Reminder callback handlers for interactive buttons."""
 
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from aiogram import F, Router, types
 
@@ -10,6 +11,9 @@ from app.services.task_service import task_service
 from app.services.user_service import get_or_create_user
 
 router = Router()
+
+# Uzbekistan timezone (UTC+5)
+UZBEKISTAN_TZ = ZoneInfo("Asia/Tashkent")
 
 
 @router.callback_query(F.data.startswith("reminder_done_"))
@@ -67,12 +71,13 @@ async def callback_reminder_snooze(callback: types.CallbackQuery):
             await callback.answer("❌ Vazifa topilmadi", show_alert=True)
             return
 
-        # Calculate new due date
+        # Calculate new due date using Uzbekistan timezone
+        now_uz = datetime.now(UZBEKISTAN_TZ)
         if duration == "1h":
-            new_due = datetime.now(timezone.utc) + timedelta(hours=1)
+            new_due = now_uz + timedelta(hours=1)
             duration_text = "1 soat"
         elif duration == "1d":
-            new_due = datetime.now(timezone.utc) + timedelta(days=1)
+            new_due = now_uz + timedelta(days=1)
             duration_text = "1 kun"
         else:
             await callback.answer("❌ Xato", show_alert=True)

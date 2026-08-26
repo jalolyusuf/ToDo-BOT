@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from sqlalchemy import select
@@ -12,6 +13,9 @@ from app.models import Task, TaskStatus, User
 from app.telegram.bot import create_bot
 
 logger = logging.getLogger(__name__)
+
+# Uzbekistan timezone (UTC+5)
+UZBEKISTAN_TZ = ZoneInfo("Asia/Tashkent")
 
 
 class ReminderService:
@@ -66,25 +70,22 @@ class ReminderService:
         if not task.due_date:
             return False
 
-        # Combine date and time
+        # Get due_datetime (already includes time from when task was created)
         due_datetime = task.due_date
 
-        if task.due_time:
-            # Parse time (HH:MM format)
-            try:
-                time_parts = task.due_time.split(":")
-                hour = int(time_parts[0])
-                minute = int(time_parts[1]) if len(time_parts) > 1 else 0
+        # Make sure both datetimes are timezone-aware for comparison
+        # If due_datetime is naive, assume it's in Uzbekistan timezone
+        if due_datetime.tzinfo is None:
+            due_datetime = due_datetime.replace(tzinfo=UZBEKISTAN_TZ)
 
-                due_datetime = due_datetime.replace(hour=hour, minute=minute, second=0, microsecond=0)
-            except Exception as e:
-                logger.warning(f"Failed to parse due_time for task {task.id}: {e}")
+        # Convert now to Uzbekistan timezone for comparison
+        now_uz = now.astimezone(UZBEKISTAN_TZ)
 
         # Debug logging
-        logger.info(f"Task {task.id}: due={due_datetime}, now={now}, should_send={due_datetime <= now}")
+        logger.info(f"Task {task.id}: due={due_datetime}, now={now_uz}, should_send={due_datetime <= now_uz}")
 
         # Send reminder if due time has arrived
-        return due_datetime <= now
+        return due_datetime <= now_uz
 
     @staticmethod
     async def _send_reminder(session: AsyncSession, task: Task):

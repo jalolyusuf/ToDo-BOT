@@ -1,12 +1,16 @@
 """Task service for CRUD operations."""
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Task, TaskSource, TaskStatus
 from app.services.claude_client import claude_client
+
+# Uzbekistan timezone (UTC+5)
+UZBEKISTAN_TZ = ZoneInfo("Asia/Tashkent")
 
 
 class TaskService:
@@ -23,12 +27,21 @@ class TaskService:
         # Parse with Claude
         parsed = await claude_client.parse_task(text)
 
+        # Parse due_date with timezone
+        due_date = None
+        if parsed.get("date"):
+            date_str = parsed["date"]
+            time_str = parsed.get("time", "09:00")
+            dt_str = f"{date_str} {time_str}"
+            naive_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+            due_date = naive_dt.replace(tzinfo=UZBEKISTAN_TZ)
+
         # Create task
         task = Task(
             user_id=user_id,
             task_text=parsed["task"],
             original_text=text,
-            due_date=datetime.fromisoformat(parsed["date"]) if parsed.get("date") else None,
+            due_date=due_date,
             due_time=parsed.get("time"),
             source=source,
             status=TaskStatus.PENDING,
@@ -63,7 +76,7 @@ class TaskService:
         task = await self.get_task(session, task_id, user_id)
         if task:
             task.status = TaskStatus.DONE
-            task.completed_at = datetime.now()
+            task.completed_at = datetime.now(UZBEKISTAN_TZ)
             await session.commit()
             await session.refresh(task)
         return task

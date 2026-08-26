@@ -12,7 +12,14 @@ class SpeechService:
 
     def __init__(self):
         """Initialize OpenAI client."""
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
+        self.client = None
+        if settings.openai_api_key:
+            self.client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+    @property
+    def is_available(self) -> bool:
+        """Check if speech service is configured."""
+        return self.client is not None
 
     async def transcribe_audio(self, audio_file_path: str) -> str:
         """
@@ -24,6 +31,9 @@ class SpeechService:
         Returns:
             Transcribed text
         """
+        if not self.is_available:
+            raise RuntimeError("OpenAI API not configured - cannot transcribe audio")
+
         try:
             with open(audio_file_path, "rb") as audio_file:
                 transcript = await self.client.audio.transcriptions.create(
