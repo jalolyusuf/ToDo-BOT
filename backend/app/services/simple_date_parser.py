@@ -36,8 +36,8 @@ class SimpleDateParser:
             hour, minute = time_match.groups()
             result["time"] = f"{int(hour):02d}:{int(minute):02d}"
         else:
-            # "soat 15 da" or "15 da"
-            time_match = re.search(r'(?:soat\s+)?(\d{1,2})\s+da', text)
+            # "soat 15 da" or "15 da" or "15 ga" or "soat 15ga"
+            time_match = re.search(r'(?:soat\s+)?(\d{1,2})\s*[dg]a', text)
             if time_match:
                 hour = time_match.group(1)
                 result["time"] = f"{int(hour):02d}:00"
@@ -45,8 +45,8 @@ class SimpleDateParser:
         # Special times
         if "ertalab" in text:
             result["time"] = "09:00"
-        elif "tushlik" in text or "peshin" in text:
-            result["time"] = "13:00"
+        elif "tushlik" in text or "peshin" in text or "obed" in text or "obet" in text or "abet" in text:
+            result["time"] = "12:00"
         elif "kechqurun" in text:
             result["time"] = "18:00"
         elif "kecha" in text or "tun" in text:

@@ -140,74 +140,81 @@ async def handle_text_stateful(message: types.Message):
 
         # If waiting for date - parse and create task
         if user_session.state == SessionState.WAITING_FOR_DATE:
-            from datetime import datetime, timezone as tz
-            from zoneinfo import ZoneInfo
-            from app.services.simple_date_parser import simple_date_parser
+            try:
+                from datetime import datetime, timezone as tz
+                from zoneinfo import ZoneInfo
+                from app.services.simple_date_parser import simple_date_parser
 
-            # Parse date with simple parser (NO AI!)
-            # Use Uzbekistan timezone (UTC+5)
-            uzbekistan_tz = ZoneInfo("Asia/Tashkent")
-            current_dt = datetime.now(uzbekistan_tz)
-            parsed = simple_date_parser.parse(message.text, current_dt)
+                # Parse date with simple parser (NO AI!)
+                # Use Uzbekistan timezone (UTC+5)
+                uzbekistan_tz = ZoneInfo("Asia/Tashkent")
+                current_dt = datetime.now(uzbekistan_tz)
+                parsed = simple_date_parser.parse(message.text, current_dt)
 
-            task_data = await session_service.get_task_data(session, user.id)
+                task_data = await session_service.get_task_data(session, user.id)
 
-            # Combine all messages
-            task_text = " | ".join(task_data["messages"])
-            original_text = task_text
+                # Combine all messages
+                task_text = " | ".join(task_data["messages"])
+                original_text = task_text
 
-            # Parse due_date with timezone
-            due_date = None
-            if parsed.get("date"):
-                # Create date with Uzbekistan timezone
-                date_str = parsed["date"]
-                time_str = parsed.get("time", "09:00")  # Default to 9 AM if no time
-                dt_str = f"{date_str} {time_str}"
-                naive_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
-                due_date = naive_dt.replace(tzinfo=uzbekistan_tz)
+                # Parse due_date with timezone
+                due_date = None
+                if parsed.get("date"):
+                    # Create date with Uzbekistan timezone
+                    date_str = parsed["date"]
+                    time_str = parsed.get("time", "09:00")  # Default to 9 AM if no time
+                    dt_str = f"{date_str} {time_str}"
+                    naive_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+                    due_date = naive_dt.replace(tzinfo=uzbekistan_tz)
 
-            # Create task
-            task = Task(
-                user_id=user.id,
-                task_text=task_text,
-                original_text=original_text,
-                due_date=due_date,
-                due_time=parsed.get("time"),
-                status=TaskStatus.PENDING,
-                source=TaskSource.TEXT,
-            )
-            session.add(task)
-            await session.flush()
-
-            # Link attachments
-            if task_data["attachments"]:
-                from sqlalchemy import update
-                await session.execute(
-                    update(Attachment)
-                    .where(Attachment.id.in_(task_data["attachments"]))
-                    .values(task_id=task.id)
+                # Create task
+                task = Task(
+                    user_id=user.id,
+                    task_text=task_text,
+                    original_text=original_text,
+                    due_date=due_date,
+                    due_time=parsed.get("time"),
+                    status=TaskStatus.PENDING,
+                    source=TaskSource.TEXT,
                 )
+                session.add(task)
+                await session.flush()
 
-            await session.commit()
-            await session.refresh(task)
+                # Link attachments
+                if task_data["attachments"]:
+                    from sqlalchemy import update
+                    await session.execute(
+                        update(Attachment)
+                        .where(Attachment.id.in_(task_data["attachments"]))
+                        .values(task_id=task.id)
+                    )
 
-            # Reset session
-            await session_service.reset_session(session, user.id)
+                await session.commit()
+                await session.refresh(task)
 
-            # Format response
-            date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
-            time_str = f" {task.due_time}" if task.due_time else ""
-            attachment_count = len(task_data["attachments"])
+                # Reset session
+                await session_service.reset_session(session, user.id)
 
-            await message.answer(
-                f"✅ **Vazifa yaratildi!**\n\n"
-                f"📝 {task.task_text}\n"
-                f"📅 {date_str}{time_str}\n"
-                f"📎 {attachment_count} ta media\n"
-                f"🆔 #{task.id}\n\n"
-                f"Vazifani /webapp da ko'rishingiz mumkin!",
-                parse_mode="Markdown"
-            )
+                # Format response
+                date_str = task.due_date.strftime("%d-%m-%Y") if task.due_date else "Sana ko'rsatilmagan"
+                time_str = f" {task.due_time}" if task.due_time else ""
+                attachment_count = len(task_data["attachments"])
+
+                await message.answer(
+                    f"✅ **Vazifa yaratildi!**\n\n"
+                    f"📝 {task.task_text}\n"
+                    f"📅 {date_str}{time_str}\n"
+                    f"📎 {attachment_count} ta media\n"
+                    f"🆔 #{task.id}\n\n"
+                    f"Vazifani /webapp da ko'rishingiz mumkin!",
+                    parse_mode="Markdown"
+                )
+            except Exception as e:
+                await message.answer(
+                    f"❌ Xatolik yuz berdi: {str(e)}\n\n"
+                    f"Iltimos qaytadan urinib ko'ring yoki /cancel bosing.",
+                    parse_mode="Markdown"
+                )
             return
 
         # Default - show help
