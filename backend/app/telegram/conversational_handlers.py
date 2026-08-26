@@ -40,12 +40,10 @@ async def cmd_start(message: types.Message):
         "• \"Ertaga soat 15 da shifokorga bor\"\n"
         "• \"5 minutdan keyin qo'ng'iroq qil\"\n"
         "• \"Dushanba kuni hisobotni topshir\"\n\n"
-        "Rasm/fayl qo'shmoqchi bo'lsangiz:\n"
-        "• Avval vazifani yozing\n"
-        "• Keyin \"kut, rasm ham yuboraman\" deng\n"
-        "• Rasm/faylni yuboring\n\n"
-        "📋 /list - vazifalar ro'yxati\n"
-        "❌ /cancel - bekor qilish",
+        "Rasm/video/fayl qo'shish uchun:\n"
+        "• Vazifa yaratgandan keyin medialarni yuboring\n"
+        "• \"tayyor\" deng yoki /done bosing\n\n"
+        "📋 /list - vazifalar ro'yxati",
         parse_mode="Markdown"
     )
 
@@ -64,7 +62,24 @@ async def cmd_cancel(message: types.Message):
         )
         await session_service.reset_session(session, user.id)
 
-    await message.answer("✅ Bekor qilindi.", parse_mode="Markdown")
+    await message.answer("✅ Bekor qilindi.")
+
+
+@router.message(Command("done"))
+async def cmd_done(message: types.Message):
+    """Finish adding attachments."""
+    async with async_session_factory() as session:
+        user = await get_or_create_user(
+            session,
+            telegram_id=message.from_user.id,
+            username=message.from_user.username,
+            first_name=message.from_user.first_name,
+            last_name=message.from_user.last_name,
+            language_code=message.from_user.language_code,
+        )
+        await session_service.reset_session(session, user.id)
+
+    await message.answer("✅ Tayyor!")
 
 
 @router.message(Command("list"))
@@ -98,15 +113,15 @@ async def cmd_list(message: types.Message):
     for task in tasks:
         date_str = task.due_date.strftime("%d-%m %H:%M") if task.due_date else "—"
         text += f"• {task.task_text[:40]}{'...' if len(task.task_text) > 40 else ''}\n"
-        text += f"  📅 {date_str} | /done_{task.id}\n\n"
+        text += f"  📅 {date_str} | /complete_{task.id}\n\n"
 
     await message.answer(text, parse_mode="Markdown")
 
 
-@router.message(F.text.startswith("/done_"))
-async def cmd_done_inline(message: types.Message):
-    """Mark task as done via /done_ID command."""
-    match = re.search(r"/done_(\d+)", message.text)
+@router.message(F.text.startswith("/complete_"))
+async def cmd_complete_inline(message: types.Message):
+    """Mark task as done via /complete_ID command."""
+    match = re.search(r"/complete_(\d+)", message.text)
     if not match:
         return
 
@@ -154,15 +169,15 @@ async def handle_text(message: types.Message):
         )
 
         user_session = await session_service.get_or_create_session(session, user.id)
+        lower_text = message.text.lower().strip()
 
-        # If waiting for attachments, check if user wants to finish
-        if user_session.state == SessionState.WAITING_FOR_ATTACHMENTS:
-            lower_text = message.text.lower()
-            if any(word in lower_text for word in ["tayyor", "tamom", "bas", "yetadi", "finish", "done"]):
+        # Check for "done/finish" words - reset session
+        done_words = ["tayyor", "tamom", "bas", "yetadi", "finish", "done", "ok", "ready"]
+        if any(lower_text == word or lower_text == word + "!" for word in done_words):
+            if user_session.last_task_id:
                 await session_service.reset_session(session, user.id)
                 await message.answer("✅ Tayyor!")
                 return
-            # Otherwise, continue waiting or process as new task
 
         try:
             # Use AI to analyze the message
@@ -204,8 +219,9 @@ async def handle_text(message: types.Message):
                 await session.commit()
                 await session.refresh(task)
 
-                # Save last task ID for potential attachments
+                # Save last task ID - ready for attachments
                 await session_service.set_last_task(session, user.id, task.id)
+                await session_service.set_state(session, user.id, SessionState.WAITING_FOR_ATTACHMENTS)
 
                 # Format response
                 if due_date:
@@ -214,7 +230,8 @@ async def handle_text(message: types.Message):
                         f"✅ **Vazifa yaratildi!**\n\n"
                         f"📝 {task_text}\n"
                         f"📅 {date_display}\n\n"
-                        f"_Rasm/fayl qo'shish uchun \"kut\" deng_",
+                        f"_Rasm/video/fayl yuborishingiz mumkin_\n"
+                        f"_Tayyor bo'lgach \"tayyor\" deng yoki /done_",
                         parse_mode="Markdown"
                     )
                 else:
@@ -222,23 +239,8 @@ async def handle_text(message: types.Message):
                         f"✅ **Vazifa yaratildi!**\n\n"
                         f"📝 {task_text}\n"
                         f"📅 Sana ko'rsatilmagan\n\n"
-                        f"_Rasm/fayl qo'shish uchun \"kut\" deng_",
-                        parse_mode="Markdown"
-                    )
-
-            elif intent == "wait_for_attachments":
-                last_task_id = await session_service.get_last_task_id(session, user.id)
-                if last_task_id:
-                    await session_service.set_state(session, user.id, SessionState.WAITING_FOR_ATTACHMENTS)
-                    await message.answer(
-                        "📎 **Kutaman!**\n\n"
-                        "Rasm, video yoki fayl yuboring.\n"
-                        "Tayyor bo'lgach \"tayyor\" deng.",
-                        parse_mode="Markdown"
-                    )
-                else:
-                    await message.answer(
-                        "❓ Avval vazifa yarating, keyin fayl qo'shishingiz mumkin.",
+                        f"_Rasm/video/fayl yuborishingiz mumkin_\n"
+                        f"_Tayyor bo'lgach \"tayyor\" deng yoki /done_",
                         parse_mode="Markdown"
                     )
 
@@ -255,17 +257,24 @@ async def handle_text(message: types.Message):
                     "Menga vazifa yozing:\n"
                     "• \"Ertaga shifokorga bor\"\n"
                     "• \"5 minutdan keyin qo'ng'iroq qil\"\n\n"
-                    "📋 /list - vazifalar\n"
-                    "❌ /cancel - bekor qilish",
+                    "📋 /list - vazifalar",
                     parse_mode="Markdown"
                 )
 
             else:
-                await message.answer(
-                    "🤔 Tushunmadim. Vazifa yaratmoqchimisiz?\n\n"
-                    "Masalan: \"Ertaga soat 15 da do'konga bor\"",
-                    parse_mode="Markdown"
-                )
+                # If we have a last task, maybe they want to add note
+                if user_session.last_task_id:
+                    await message.answer(
+                        "📝 Yangi vazifa yaratmoqchimisiz?\n"
+                        "Yoki \"tayyor\" deng oldingi vazifani yakunlash uchun.",
+                        parse_mode="Markdown"
+                    )
+                else:
+                    await message.answer(
+                        "🤔 Tushunmadim. Vazifa yaratmoqchimisiz?\n\n"
+                        "Masalan: \"Ertaga soat 15 da do'konga bor\"",
+                        parse_mode="Markdown"
+                    )
 
         except Exception as e:
             await message.answer(
@@ -274,10 +283,10 @@ async def handle_text(message: types.Message):
             )
 
 
-# Media handlers - attach to last task
+# Media handlers - attach to last task automatically
 @router.message(F.photo)
 async def handle_photo(message: types.Message):
-    """Handle photo - attach to last task or wait state."""
+    """Handle photo - attach to last task."""
     await _handle_media(message, AttachmentType.PHOTO, "Rasm")
 
 
@@ -299,8 +308,14 @@ async def handle_voice(message: types.Message):
     await _handle_media(message, AttachmentType.VOICE, "Ovoz")
 
 
+@router.message(F.audio)
+async def handle_audio(message: types.Message):
+    """Handle audio."""
+    await _handle_media(message, AttachmentType.AUDIO, "Audio")
+
+
 async def _handle_media(message: types.Message, file_type: AttachmentType, type_name: str):
-    """Generic media handler."""
+    """Generic media handler - automatically attach to last task."""
     async with async_session_factory() as session:
         user = await get_or_create_user(
             session,
@@ -316,10 +331,11 @@ async def _handle_media(message: types.Message, file_type: AttachmentType, type_
         # Check if we have a task to attach to
         last_task_id = user_session.last_task_id
 
-        if not last_task_id and user_session.state != SessionState.WAITING_FOR_ATTACHMENTS:
+        if not last_task_id:
             await message.answer(
                 f"📎 {type_name} qabul qilindi, lekin vazifa yo'q.\n\n"
-                "Avval vazifa yarating, keyin media yuboring.",
+                "Avval vazifa yarating:\n"
+                "\"Ertaga soat 10 da uchrashuv\"",
                 parse_mode="Markdown"
             )
             return
@@ -330,23 +346,24 @@ async def _handle_media(message: types.Message, file_type: AttachmentType, type_
         task = result.scalar_one_or_none()
 
         if not task:
-            await message.answer("❌ Vazifa topilmadi.")
+            await message.answer("❌ Vazifa topilmadi. Yangi vazifa yarating.")
             return
 
-        # Save the file
-        file_data = await file_service.download_telegram_file(message.bot, message, file_type)
+        try:
+            # Save the file (forwards to channel if configured)
+            file_data = await file_service.download_telegram_file(message.bot, message, file_type)
 
-        # Create attachment linked to task
-        attachment = Attachment(task_id=task.id, **file_data)
-        session.add(attachment)
-        await session.commit()
+            # Create attachment linked to task
+            attachment = Attachment(task_id=task.id, **file_data)
+            session.add(attachment)
+            await session.commit()
 
-        # Add caption as message if exists
-        caption = message.caption or ""
+            await message.answer(
+                f"✅ {type_name} qo'shildi!\n\n"
+                f"📝 _{task.task_text[:30]}..._\n\n"
+                f"Yana yuborishingiz yoki \"tayyor\" deng",
+                parse_mode="Markdown"
+            )
 
-        await message.answer(
-            f"✅ {type_name} vazifaga qo'shildi!\n\n"
-            f"📝 {task.task_text[:40]}...\n\n"
-            f"_Yana yuborishingiz yoki \"tayyor\" deng_",
-            parse_mode="Markdown"
-        )
+        except Exception as e:
+            await message.answer(f"❌ Xatolik: {str(e)}")

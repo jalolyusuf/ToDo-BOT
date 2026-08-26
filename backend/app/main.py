@@ -5,6 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from sqlalchemy import text
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -41,6 +42,15 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
+
+        # Add missing columns (migrations)
+        try:
+            await conn.execute(text(
+                "ALTER TABLE attachments ADD COLUMN IF NOT EXISTS channel_message_id INTEGER"
+            ))
+            logger.info("✅ Database migrations applied")
+        except Exception as e:
+            logger.debug(f"Migration note: {e}")
 
     # Setup Telegram Mini App button
     try:
