@@ -1,7 +1,5 @@
 """Conversational bot handlers with state management."""
 
-import json
-import os
 from datetime import datetime
 
 from aiogram import F, Router, types
@@ -12,7 +10,6 @@ from app.db import async_session_factory
 from app.models import Attachment, AttachmentType, SessionState, Task, TaskSource, TaskStatus
 from app.services.file_service import file_service
 from app.services.session_service import session_service
-from app.services.speech_service import speech_service
 from app.services.task_service import task_service
 from app.services.user_service import get_or_create_user
 
@@ -342,7 +339,7 @@ async def handle_document_stateful(message: types.Message):
 
 @router.message(F.voice)
 async def handle_voice_stateful(message: types.Message):
-    """Handle voice with state - transcribe and save."""
+    """Handle voice with state - save voice file."""
     async with async_session_factory() as session:
         user = await get_or_create_user(
             session,
@@ -359,32 +356,14 @@ async def handle_voice_stateful(message: types.Message):
             await message.answer("Avval /new buyrug'ini yuboring!")
             return
 
-        # Download voice
-        file = await message.bot.get_file(message.voice.file_id)
-        file_path = f"/tmp/voice_{message.voice.file_id}.ogg"
-        await message.bot.download_file(file.file_path, file_path)
+        # Save voice file
+        file_data = await file_service.download_telegram_file(message.bot, message, AttachmentType.VOICE)
+        attachment = Attachment(task_id=0, **file_data)
+        session.add(attachment)
+        await session.commit()
+        await session.refresh(attachment)
 
-        try:
-            # Transcribe (if OpenAI available)
-            try:
-                text = await speech_service.transcribe_audio(file_path)
-                await session_service.add_task_message(session, user.id, text)
-                await message.answer(f"🎤 Eshitdim: _{text}_", parse_mode="Markdown")
-            except Exception as e:
-                await message.answer("⚠️ Ovozni matnga aylantirib bo'lmadi, lekin saqlandi!")
-
-            # Save voice file
-            file_data = await file_service.download_telegram_file(message.bot, message, AttachmentType.VOICE)
-            attachment = Attachment(task_id=0, **file_data)
-            session.add(attachment)
-            await session.commit()
-            await session.refresh(attachment)
-
-            await session_service.add_task_attachment(session, user.id, attachment.id)
-
-        finally:
-            if os.path.exists(file_path):
-                os.remove(file_path)
+        await session_service.add_task_attachment(session, user.id, attachment.id)
 
     await message.answer(
         "✅ Ovoz saqlandi!\n\n"
