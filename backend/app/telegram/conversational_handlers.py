@@ -170,7 +170,7 @@ async def handle_text_stateful(message: types.Message):
                 if parsed.get("date"):
                     # Create date with Uzbekistan timezone
                     date_str = parsed["date"]
-                    time_str = parsed.get("time", "09:00")  # Default to 9 AM if no time
+                    time_str = parsed.get("time") or "09:00"  # Default to 9 AM if no time
                     dt_str = f"{date_str} {time_str}"
                     naive_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
                     due_date = naive_dt.replace(tzinfo=uzbekistan_tz)

@@ -140,41 +140,45 @@ FAQAT JSON qaytar, boshqa matn yoki tushuntirish YOZMA. Format:
         if not current_date:
             now = datetime.now()
             current_date = now.strftime("%Y-%m-%d")
+            current_time = now.strftime("%H:%M")
         else:
             now = datetime.strptime(current_date, "%Y-%m-%d")
+            current_time = datetime.now().strftime("%H:%M")
 
         tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
         current_year = now.year
-        current_weekday = now.weekday()
 
         prompt = f"""Sen sana va vaqtni ajratuvchi yordamchisan. Foydalanuvchi xabaridan quyidagilarni JSON formatida qaytar:
 
 - **date**: sana YYYY-MM-DD formatida
 - **time**: vaqt HH:MM formatida
 
-**Bugungi sana: {current_date} (Yil: {current_year})**
+**Hozirgi vaqt: {current_date} {current_time} (Yil: {current_year})**
 
 **SANA QOIDALARI:**
-- "bugun" → {current_date}
+- "bugun", "hozir" → {current_date}
 - "ertaga" → {tomorrow}
-- "3-sentabr", "3 sentabrda", "sentabrning 3 da" → {current_year}-09-03
-- "15-avgust", "avgustning 15 i" → {current_year}-08-15
-- Hafta kunlari (dushanba=0, yakshanba=6): keyingi shu kunni hisoblang
-- Agar sana aniq ko'rsatilmagan → null
+- "3-sentabr", "3 sentabrda" → {current_year}-09-03
+- "15-avgust" → {current_year}-08-15
+- Hafta kunlari: keyingi shu kunni hisoblang
+- Agar sana yo'q bo'lsa → {current_date} (bugun)
 
 **VAQT QOIDALARI:**
-- "12 ga", "12 da", "soat 12", "12:00" → "12:00"
-- "15:30 da", "soat 15:30" → "15:30"
+- "hozir", "darhol" → "{current_time}"
+- "5 minutdan keyin", "10 daqiqadan keyin" → hozirgi vaqtga qo'sh va HH:MM formatda qaytar
+- "1 soatdan keyin" → hozirgi vaqtga 1 soat qo'sh
+- "12 ga", "12 da", "soat 12" → "12:00"
+- "15:30 da" → "15:30"
 - "ertalab" → "09:00"
-- "tushlik", "obed", "obet", "abet", "peshin" → "12:00"
+- "tushlik", "obed", "peshin" → "12:00"
 - "kechqurun" → "18:00"
-- "kechasi", "tunda" → "21:00"
-- Agar vaqt aniq ko'rsatilmagan → null
+- "kechasi" → "21:00"
+- Agar vaqt yo'q bo'lsa → "{current_time}" (hozir)
 
 **Foydalanuvchi xabari:** "{user_message}"
 
-FAQAT JSON qaytar:
-{{"date": "YYYY-MM-DD yoki null", "time": "HH:MM yoki null"}}"""
+FAQAT JSON qaytar, hech qanday tushuntirish yozma:
+{{"date": "YYYY-MM-DD", "time": "HH:MM"}}"""
 
         try:
             message = self.client.messages.create(
