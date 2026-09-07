@@ -14,7 +14,7 @@ async def setup_mini_app_button(bot: Bot):
         await bot.set_chat_menu_button(
             menu_button={
                 "type": "web_app",
-                "text": "📋 Vazifalar",
+                "text": "Tasks",
                 "web_app": {"url": f"{settings.telegram_webhook_url}"},
             }
         )
